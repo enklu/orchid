@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+    <PackageReference Include="NUnit" Version="3.11.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.12.0" />
+    <PackageReference Include="Microsoft.ChakraCore" Version="1.11.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+      <ProjectReference Include="..\Orchid.Chakra\Orchid.Chakra.csproj"/>
+  </ItemGroup>
+
+  <!-- 
+  The ChakraCore nuget package still relies on legacy nuget configuration, so to correctly
+  pull it into this build, we have to copy from the nuget packages. 
+  -->
+  <Target Name="CopyPackages" BeforeTargets="BeforeBuild;BeforeRebuild">
+    <PropertyGroup>
+      <ChakraCorePackageId Condition="'%(PackageReference.Identity)' == 'Microsoft.ChakraCore'">%(PackageReference.Identity)</ChakraCorePackageId>
+      <ChakraCoreVersion Condition="'%(PackageReference.Identity)' == 'Microsoft.ChakraCore'">%(PackageReference.Version)</ChakraCoreVersion>
+      <RuntimeVersion Condition="'$(Platform)' == 'x64' OR '$(Platform)' == 'AnyCPU'">win7-x64</RuntimeVersion>
+      <RuntimeVersion Condition="'$(Platform)' == 'x86'">win7-x86</RuntimeVersion>
+    </PropertyGroup>
+    <ItemGroup>
+      <ChakraCore Include="$(NuGetPackageRoot)$(ChakraCorePackageId.ToLower())\$(ChakraCoreVersion)\runtimes\$(RuntimeVersion)\native\ChakraCore.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ChakraCore)" DestinationFolder="$(OutDir)" />
+  </Target>
+
+</Project>
