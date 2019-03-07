@@ -15,15 +15,15 @@ namespace Enklu.Orchid.Chakra.Interop
     /// </summary>
     public class JsBinder
     {
-        private readonly JsContext _context;
+        private readonly JsContextScope _scope;
         private readonly JavaScriptObjectBeforeCollectCallback _jsGcCollect;
 
         /// <summary>
         /// Creates a new <see cref="JsBinder"/> instance.
         /// </summary>
-        public JsBinder(JsContext context)
+        public JsBinder(JsContextScope scope)
         {
-            _context = context;
+            _scope = scope;
             _jsGcCollect = JsGcCollect;
         }
 
@@ -36,7 +36,7 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <param name="func">The host function used to create the JavaScript function and binding.</param>
         public JavaScriptValue BindFunction(JavaScriptNativeFunction func)
         {
-            return _context.Run(() =>
+            return _scope.Run(() =>
             {
                 var jsValue = JavaScriptValue.CreateFunction(func);
                 Link(jsValue, func);
@@ -58,7 +58,7 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <param name="instance">The host object instance to bind the JavaScript object to.</param>
         public JavaScriptValue BindObject<T>(T instance)
         {
-            return _context.Run(() =>
+            return _scope.Run(() =>
             {
                 // JS Object which allows external data to be set. In this case, the pointer of our bound host object
                 var jsValue = JavaScriptValue.CreateExternalObject(IntPtr.Zero, null);
@@ -109,7 +109,7 @@ namespace Enklu.Orchid.Chakra.Interop
             var gcHandle = GCHandle.Alloc(instance, GCHandleType.Normal);
             var ptr = GCHandle.ToIntPtr(gcHandle);
 
-            _context.Run(() =>
+            _scope.Run(() =>
             {
                 JavaScriptContext.SetObjectBeforeCollectCallback(jsValue, ptr, _jsGcCollect);
             });

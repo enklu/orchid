@@ -8,7 +8,7 @@ namespace Enklu.Orchid.Chakra
     /// of the utilities for binding host objects, a layer of interop, and basic
     /// API for running JS scripts.
     /// </summary>
-    public class JsEngine : IDisposable
+    public class JsExecutionContext : IJsExecutionContext, IDisposable
     {
         /// <summary>
         /// The Chakra JavaScript runtime
@@ -16,9 +16,9 @@ namespace Enklu.Orchid.Chakra
         private JavaScriptRuntime _runtime;
 
         /// <summary>
-        /// The main runtime context.
+        /// The context instance internal to this execution context.
         /// </summary>
-        private JsContext _context;
+        private JsContextScope _scope;
 
         /// <summary>
         /// The interop layer for converting host objects to JS and vice versa.
@@ -37,19 +37,32 @@ namespace Enklu.Orchid.Chakra
         private JsBinding _global;
 
         /// <summary>
-        /// Creates a new <see cref="JsEngine"/> instance.
+        /// The <see cref="JsContextScope"/> used to work with raw <see cref="JavaScriptValue"/>.
         /// </summary>
-        public JsEngine()
-        {
-            _runtime = JavaScriptRuntime.Create();
-            _context = new JsContext(_runtime.CreateContext());
-            _binder = new JsBinder(_context);
-            _interop = new JsInterop(_context, _binder);
+        public JsContextScope Scope => _scope;
 
-            _context.Run(() =>
+        /// <summary>
+        /// Creates a new <see cref="JsExecutionContext"/> instance.
+        /// </summary>
+        public JsExecutionContext(JavaScriptRuntime runtime)
+        {
+            _runtime = runtime;
+            _scope = new JsContextScope(_runtime.CreateContext());
+            _binder = new JsBinder(_scope);
+            _interop = new JsInterop(_scope, _binder);
+
+            _scope.Run(() =>
             {
-                _global = new JsBinding(_context, _binder, _interop, JavaScriptValue.GlobalObject);
+                _global = new JsBinding(_scope, _binder, _interop, JavaScriptValue.GlobalObject);
             });
+        }
+
+        /// <summary>
+        /// Gets a raw <see cref="JavaScriptValue"/> from the global object/scope.
+        /// </summary>
+        public JavaScriptValue GetValue(string name)
+        {
+            return _scope.Run(() => _global.GetValue(name));
         }
 
         /// <summary>
@@ -71,22 +84,20 @@ namespace Enklu.Orchid.Chakra
         /// <summary>
         /// Executes JavaScript code in the context of the global object/scope.
         /// </summary>
-        public JavaScriptValue RunScript(string script)
+        public void RunScript(string script)
         {
-            return _context.Run(() =>
+            _scope.Run(() =>
             {
-                JavaScriptValue result = JavaScriptValue.Invalid;
                 try
                 {
-                    result = JavaScriptContext.RunScript(script);
+                    JavaScriptContext.RunScript(script);
                 }
                 catch (JavaScriptScriptException e)
                 {
-                    var message = GetExceptionMessage(e.Error);
+                    var error = e.Error;
+                    var message = error.GetProperty(JavaScriptPropertyId.FromString("message")).ToString();
                     throw new Exception(message);
                 }
-
-                return result;
             });
         }
 
@@ -96,33 +107,18 @@ namespace Enklu.Orchid.Chakra
         /// </summary>
         public JsBinding NewJsObject()
         {
-            return _context.Run(() =>
+            return _scope.Run(() =>
             {
                 var jsValue = JavaScriptValue.CreateObject();
 
-                return new JsBinding(_context, _binder, _interop, jsValue);
+                return new JsBinding(_scope, _binder, _interop, jsValue);
             });
-        }
-
-        /// <summary>
-        /// Prints error message.
-        /// </summary>
-        /// <param name="exception"></param>
-        private static string GetExceptionMessage(JavaScriptValue exception)
-        {
-            return exception.GetProperty(JavaScriptPropertyId.FromString("message")).ToString();
         }
 
         /// <inheritdoc />
         public void Dispose()
         {
-            _context.Dispose();
-            _runtime.Dispose();
+            _scope.Dispose();
         }
-
-        /// <summary>
-        /// Creates a new binding builder.
-        /// </summary>
-        private JsBindingBuilder NewBuilder() => new JsBindingBuilder(_context, _binder, _interop);
     }
 }

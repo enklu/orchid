@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net35;netstandard2.0</TargetFrameworks>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Company>Enklu</Company>
+    <Authors>Enklu</Authors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Jint" Version="2.9.1-Enklu" />
+  </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="../Orchid/Orchid.csproj" />
+    </ItemGroup>
+
+</Project>

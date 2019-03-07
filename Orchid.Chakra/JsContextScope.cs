@@ -9,10 +9,10 @@ namespace Enklu.Orchid.Chakra
     /// per runtime.
     ///
     /// Any calls which directly interface with ChakraCore should use the current API for
-    /// running commands in a context. <see cref="JsContext"/> provides a reentrant delegate
+    /// running commands in a context. <see cref="JsContextScope"/> provides a reentrant delegate
     /// executor utility as well as <see cref="Enter"/> and <see cref="Exit"/> methods.
     /// </summary>
-    public class JsContext : IDisposable
+    public class JsContextScope : IDisposable
     {
         /// <summary>
         /// Use the invalid context to determine whether or not entrance is possible
@@ -35,9 +35,9 @@ namespace Enklu.Orchid.Chakra
         public bool IsCurrentContext => JavaScriptContext.Current == _context;
 
         /// <summary>
-        /// Creates a new <see cref="JsContext"/> instance.
+        /// Creates a new <see cref="JsContextScope"/> instance.
         /// </summary>
-        public JsContext(JavaScriptContext context)
+        public JsContextScope(JavaScriptContext context)
         {
             _context = context;
             _context.AddRef();

@@ -48,7 +48,7 @@ namespace Enklu.Orchid.Chakra.Interop
         /// </summary>
         private static object[] EmptyParameters = new object[0];
 
-        private readonly JsContext _context;
+        private readonly JsContextScope _scope;
         private readonly JsBinder _binder;
         private readonly JsInterop _interop;
 
@@ -59,9 +59,9 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <summary>
         /// Creates a new <see cref="JsBindingBuilder"/> instance.
         /// </summary>
-        public JsBindingBuilder(JsContext context, JsBinder binder, JsInterop interop)
+        public JsBindingBuilder(JsContextScope scope, JsBinder binder, JsInterop interop)
         {
-            _context = context;
+            _scope = scope;
             _binder = binder;
             _interop = interop;
         }
@@ -113,14 +113,14 @@ namespace Enklu.Orchid.Chakra.Interop
         /// </summary>
         public JsBinding Build()
         {
-            return _context.Run(() =>
+            return _scope.Run(() =>
             {
                 // Create a host object binding or new JS Object binding
                 var jsValue = null != _boundTo
                     ? _binder.BindObject(_boundTo)
                     : JavaScriptValue.CreateObject();
 
-                var binding = new JsBinding(_context, _binder, _interop, jsValue);
+                var binding = new JsBinding(_scope, _binder, _interop, jsValue);
 
                 // Bind Host Object Methods, Properties, and Fields if bound to host object
                 if (null != _boundTo && null != _hostType)

@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Enklu.Orchid.Chakra;
-using Enklu.Orchid.Chakra.Interop;
+using Enklu.Orchid.Jint;
 using NUnit.Framework;
 
-namespace Enklu.Orchid.Chakra.Tests
+namespace Enklu.Orchid.Jint.Tests
 {
     public class SimpleObject
     {
@@ -197,10 +196,26 @@ namespace Enklu.Orchid.Chakra.Tests
     }
 
     [TestFixture]
-    public class OrchidChakraTests
+    public class OrchidJintTests
     {
         private SimpleObject _simpleObject;
-        private int _totalLogCalls = 0;
+        private ConsoleLog _consoleLog = new ConsoleLog();
+
+        public class ConsoleLog
+        {
+            public int TotalLogCalls { get; set; }
+
+            public ConsoleLog()
+            {
+                TotalLogCalls = 0;
+            }
+
+            public void log(string s)
+            {
+                Console.WriteLine(s);
+                TotalLogCalls++;
+            }
+        }
 
         /// <summary>
         /// Creates a new test <see cref="JsRuntime"/>
@@ -210,16 +225,7 @@ namespace Enklu.Orchid.Chakra.Tests
             var context = (JsExecutionContext) runtime.NewExecutionContext();
             context.RunScript("function assert(a) { if (!a) throw new Error('Failed Assertion'); };");
 
-            var binding = context.NewJsObject();
-            binding.AddFunction("log",
-                (callee, call, arguments, count, data) =>
-                {
-                    _totalLogCalls++;
-                    Console.WriteLine(arguments[1].ConvertToString().ToString());
-                    return JavaScriptValue.Invalid;
-                });
-
-            context.SetValue("console", binding);
+            context.SetValue("console", _consoleLog);
 
             return context;
         }
@@ -256,7 +262,7 @@ namespace Enklu.Orchid.Chakra.Tests
                 GG = new[] {true, false, true},
                 HH = new[] {"hello", "world", "test"}
             };
-            _totalLogCalls = 0;
+            _consoleLog = new ConsoleLog();
         }
 
         [Test]
@@ -267,7 +273,7 @@ namespace Enklu.Orchid.Chakra.Tests
                 context.RunScript("console.log('Hello World!');");
             });
 
-            Assert.AreEqual(1, _totalLogCalls);
+            Assert.AreEqual(1, _consoleLog.TotalLogCalls);
         }
 
         [Test]
@@ -358,60 +364,6 @@ namespace Enklu.Orchid.Chakra.Tests
                     });
                 ");
             });
-        }
-
-        [Test]
-        public void SetActionTest()
-        {
-            int callCount = 0;
-            RunTest(context =>
-            {
-                Action<int, string> a = (i, s) =>
-                {
-                    callCount++;
-                    Console.WriteLine($"[i: {i}, s: {s}]");
-                };
-
-                var jsObj = context.NewJsObject();
-                jsObj.SetValue("run", a);
-                context.SetValue("test", jsObj);
-
-                context.RunScript("test.run(5, 'testing 1 2 3');");
-            });
-
-            Assert.AreEqual(1, callCount);
-        }
-
-        [Test]
-        public void SetFuncTest()
-        {
-            int callCount = 0;
-            RunTest(context =>
-            {
-                Func<int, string, float> a = (i, s) =>
-                {
-                    callCount++;
-                    Console.WriteLine($"[i: {i}, s: {s}]");
-                    return 23.4F;
-                };
-
-                var jsObj = context.NewJsObject();
-                jsObj.SetValue("run", a);
-                context.SetValue("test", jsObj);
-
-                context.RunScript(@"
-                    var result = test.run(5, 'testing 1 2 3');
-                    console.log(result);
-
-                    var r = result - 23.4;
-                    r = r < 0 ? -r : r;
-                    assert(r < 0.0001);
-
-                    console.log(r + ' is less than ' + 0.0001);
-                ");
-            });
-
-            Assert.AreEqual(1, callCount);
         }
 
         [Test]

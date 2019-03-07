@@ -7,7 +7,7 @@ namespace Enklu.Orchid.Chakra.Interop
     /// </summary>
     public class JsBinding
     {
-        private readonly JsContext _context;
+        private readonly JsContextScope _scope;
         private readonly JsBinder _binder;
         private readonly JsInterop _interop;
         private readonly JavaScriptValue _value;
@@ -20,9 +20,9 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <summary>
         /// Creates a new <see cref="JsBinding"/> instance.
         /// </summary>
-        public JsBinding(JsContext context, JsBinder binder, JsInterop interop, JavaScriptValue value)
+        public JsBinding(JsContextScope scope, JsBinder binder, JsInterop interop, JavaScriptValue value)
         {
-            _context = context;
+            _scope = scope;
             _binder = binder;
             _interop = interop;
             _value = value;
@@ -35,7 +35,7 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <param name="jsFunction">The callback function to execute when the JavaScript function is invoked.</param>
         public void AddFunction(string name, JavaScriptNativeFunction jsFunction)
         {
-            _context.Run(() =>
+            _scope.Run(() =>
             {
                 var jsValue = _binder.BindFunction(jsFunction);
 
@@ -51,7 +51,7 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <param name="setter">The function to invoke when the field is written to.</param>
         public void AddProperty(string name, JavaScriptNativeFunction getter, JavaScriptNativeFunction setter)
         {
-            _context.Run(() =>
+            _scope.Run(() =>
             {
                 var get = _binder.BindFunction(getter);
                 var set = _binder.BindFunction(setter);
@@ -64,6 +64,14 @@ namespace Enklu.Orchid.Chakra.Interop
             });
         }
 
+        public JavaScriptValue GetValue(string name)
+        {
+            return _scope.Run(() =>
+            {
+                return _value.GetProperty(JavaScriptPropertyId.FromString(name));
+            });
+        }
+
         /// <summary>
         ///
         /// </summary>
@@ -72,9 +80,10 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <returns></returns>
         public T GetValue<T>(string name)
         {
-            return _context.Run(() =>
+            return _scope.Run(() =>
             {
                 var property = _value.GetProperty(JavaScriptPropertyId.FromString(name));
+
                 return (T) _interop.ToHostObject(property, typeof(T));
             });
         }
@@ -107,14 +116,14 @@ namespace Enklu.Orchid.Chakra.Interop
             {
                 var binding = (JsBinding) value;
 
-                _context.Run(() =>
+                _scope.Run(() =>
                 {
                     _value.SetProperty(JavaScriptPropertyId.FromString(name), binding.Object, true);
                 });
                 return;
             }
 
-            _context.Run(() =>
+            _scope.Run(() =>
             {
                 var jsValue = _interop.ToJsObject(value, type);
 

@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Enklu.Orchid.Chakra.Interop
 {
     /// <summary>
-    /// This class is used to to convert types between JavaScript and C#. While most types are
-    /// one to one, there are a few
-    /// An interop helper utility for converting host types into javascript types.
+    /// This class is used to to convert types between JavaScript and C#. Most conversions are
+    /// deterministic, but dynamic objects and functions take a bit more work to create. The types
+    /// used with this utility normally require the backing type to exist in C# before it can exist
+    /// in JS and be passed back out to C#.
     /// </summary>
     public class JsInterop
     {
@@ -55,7 +57,7 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <summary>
         /// The javascript context to use for conversions.
         /// </summary>
-        private readonly JsContext _context;
+        private readonly JsContextScope _scope;
 
         /// <summary>
         /// The javascript binder used to create and lookup bound host objects.
@@ -63,12 +65,22 @@ namespace Enklu.Orchid.Chakra.Interop
         private readonly JsBinder _binder;
 
         /// <summary>
+        /// Mapping from JS functions to host delegates.
+        /// </summary>
+        private readonly Dictionary<IntPtr, Delegate> _delegateCache = new Dictionary<IntPtr, Delegate>();
+
+        /// <summary>
+        /// Cache containing mappings to orchid core callbacks.
+        /// </summary>
+        private readonly Dictionary<IntPtr, IJsCallback> _callbackCache = new Dictionary<IntPtr, IJsCallback>();
+
+        /// <summary>
         /// Creates a new <see cref="JsInterop"/> instance.
         /// </summary>
-        /// <param name="context"></param>
-        public JsInterop(JsContext context, JsBinder binder)
+        /// <param name="scope"></param>
+        public JsInterop(JsContextScope scope, JsBinder binder)
         {
-            _context = context;
+            _scope = scope;
             _binder = binder;
         }
 
@@ -94,6 +106,80 @@ namespace Enklu.Orchid.Chakra.Interop
             }
 
             throw new Exception($"Cannot handle JS value type: {arg.ValueType}");
+        }
+
+        /// <summary>
+        /// Attempts to infer the host type based on the javscript type.
+        /// </summary>
+        public bool TryInferType(JavaScriptValue arg, out Type type)
+        {
+            type = null;
+            switch (arg.ValueType)
+            {
+                case JavaScriptValueType.Undefined: return true;
+                case JavaScriptValueType.Null: return true;
+                case JavaScriptValueType.Array:
+                {
+                    type = typeof(object[]);
+                    return true;
+                }
+                case JavaScriptValueType.TypedArray:
+                {
+                    var length = arg.GetProperty(JavaScriptPropertyId.FromString("length")).ToInt32();
+                    if (length <= 0)
+                    {
+                        type = typeof(object[]);
+                        return true;
+                    }
+
+                    Type innerType;
+                    var firstElement = arg.GetIndexedProperty(JavaScriptValue.FromInt32(0));
+                    if (TryInferType(firstElement, out innerType))
+                    {
+                        type = innerType.MakeArrayType();
+                        return true;
+                    }
+
+                    type = typeof(object[]);
+                    return true;
+                }
+                case JavaScriptValueType.Boolean:
+                {
+                    type = typeof(bool);
+                    return true;
+                }
+                case JavaScriptValueType.Number:
+                {
+                    type = typeof(double);
+                    return true;
+                }
+                case JavaScriptValueType.String:
+                {
+                    type = typeof(string);
+                    return true;
+                }
+                case JavaScriptValueType.Function:
+                {
+                    type = typeof(IJsCallback);
+                    return true;
+                }
+                case JavaScriptValueType.Object:
+                {
+                    try
+                    {
+                        var hostObject = ToHostBoundObject(arg, typeof(void));
+                        type = hostObject.GetType();
+                        return true;
+                    }
+                    catch
+                    {
+                        type = typeof(object);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -137,7 +223,7 @@ namespace Enklu.Orchid.Chakra.Interop
         /// </summary>
         public object ToHostBoolean(JavaScriptValue arg, Type toType)
         {
-            if (toType != typeof(bool))
+            if (!toType.IsAssignableFrom(typeof(bool)))
             {
                 throw new Exception($"Cannot convert javascript boolean to type: {toType}");
             }
@@ -197,7 +283,7 @@ namespace Enklu.Orchid.Chakra.Interop
         /// </summary>
         private object ToHostString(JavaScriptValue arg, Type toType)
         {
-            if (typeof(string) != toType)
+            if (!toType.IsAssignableFrom(typeof(string)))
             {
                 throw new Exception($"Cannot convert javascript string to type: {toType}");
             }
@@ -208,13 +294,31 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <summary>
         /// Converts a <see cref="JavaScriptValue"/> with a function type to a host value.
         /// </summary>
+        public object ToHostFunction(JavaScriptValue arg, Type toType)
+        {
+            // Orchid IJsCallback
+            if (typeof(IJsCallback).IsAssignableFrom(toType))
+            {
+                return ToJsCallback(arg);
+            }
+
+            // Action/Func
+            if (typeof(MulticastDelegate).IsAssignableFrom(toType))
+            {
+                return ToMulticastDelegate(arg, toType);
+            }
+
+            throw new Exception("Unable to convert javascript function to delegate/callback type: " + toType);
+        }
+
+        /// <summary>
+        /// Creates and caches a multicast delegate wrapper which forwards parameters into the JS
+        /// callback.
+        /// </summary>
         /// <remarks>
         /// This currently handles well defined delegates (with Invoke). For instance:
         /// <see cref="Action{T}"/> and <see cref="Func{TResult}"/> work appropriately.
         /// Some of the parameter handling may need some work (ie: <c>params T[] rest</c>).
-        /// The <see cref="Delegate"/> type is also not supported currently due to the
-        /// <see cref="Delegate.DynamicInvoke"/> method. Since DynamicInvoke and varargs both
-        /// require some more Expression building, we should aim to support this soon.
         ///
         /// This conversion occurs when executing javascript code needs to pass a callback to
         /// C#. Instead of forcing implementers to use <see cref="JavaScriptNativeFunction"/>,
@@ -233,10 +337,10 @@ namespace Enklu.Orchid.Chakra.Interop
         ///         .NewArray JavaScriptValue[]
         ///         {
         ///           .Constant[JavaScriptValue](JavaScriptValue),
-        ///           .Call .JsConverter.JsConvert((object)$arg1_0, .Constant[Type](int)),
-        ///           .Call .JsConverter.JsConvert($arg2_1, .Constant[Type](string))
+        ///           .Call .JsInterop.ToJsObject((object)$arg1_0, .Constant[Type](int)),
+        ///           .Call .JsInterop.ToJsObject($arg2_1, .Constant[Type](string))
         ///         });
-        ///       (float) .Call JsConverter.Convert($returnValue, .Constant[Type](float))
+        ///       (float) .Call JsInterop.ToJsObject($returnValue, .Constant[Type](float))
         ///     }
         ///   }
         ///   .Catch (Exception $e)
@@ -255,11 +359,14 @@ namespace Enklu.Orchid.Chakra.Interop
         /// </code>
         /// </example>
         /// </remarks>
-        public object ToHostFunction(JavaScriptValue arg, Type toType)
+        private object ToMulticastDelegate(JavaScriptValue arg, Type toType)
         {
-            if (!typeof(MulticastDelegate).IsAssignableFrom(toType))
+            // Get the JS function reference pointer, and determine if we've adapted this function to a host delegate before.
+            // If so, return the cached expression. This also ensures that the delegate passed out stays consistent.
+            var fnReference = arg.Reference;
+            if (_delegateCache.ContainsKey(fnReference))
             {
-                throw new Exception($"Cannot convert javascript Function to type: {toType}");
+                return _delegateCache[fnReference];
             }
 
             var method = toType.GetMethod("Invoke");
@@ -324,7 +431,28 @@ namespace Enklu.Orchid.Chakra.Interop
                     Expression.Call(jsFunc, JsValueReleaseInfo),
                     ExpressionHelper.CatchBlock(exceptionParam, setJsException, returnType)));
 
-            return Expression.Lambda(toType, assignAndBody, parameterExpressions).Compile();
+            var hostFn = Expression.Lambda(toType, assignAndBody, parameterExpressions).Compile();
+
+            // Add to Delegate Cache for the reference
+            // TODO: Look into hooking this into the GC management in JsBinder
+            _delegateCache[arg.Reference] = hostFn;
+
+            return hostFn;
+        }
+
+        /// <summary>
+        /// Wraps the JS function in a callable wrapper object that implements the Orchid core callback interface.
+        /// </summary>
+        private IJsCallback ToJsCallback(JavaScriptValue arg)
+        {
+            if (_callbackCache.ContainsKey(arg.Reference))
+            {
+                return _callbackCache[arg.Reference];
+            }
+
+            var jsCallback = new JsCallback(_scope, this, arg);
+            _callbackCache[arg.Reference] = jsCallback;
+            return jsCallback;
         }
 
         /// <summary>
@@ -535,7 +663,7 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <summary>
         /// New JS Binding Builder
         /// </summary>
-        private JsBindingBuilder NewBuilder() => new JsBindingBuilder(_context, _binder, this);
+        private JsBindingBuilder NewBuilder() => new JsBindingBuilder(_scope, _binder, this);
 
         /// <summary>
         /// Determines if the host type is void.

@@ -7,7 +7,7 @@
     ///     A JavaScript value.
     /// </summary>
     /// <remarks>
-    ///     A JavaScript value is one of the following types of values: Undefined, Null, Boolean, 
+    ///     A JavaScript value is one of the following types of values: Undefined, Null, Boolean,
     ///     String, Number, or Object.
     /// </remarks>
     public struct JavaScriptValue
@@ -15,7 +15,7 @@
         /// <summary>
         /// The reference.
         /// </summary>
-        private readonly IntPtr reference;
+        private readonly IntPtr _reference;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="JavaScriptValue"/> struct.
@@ -23,7 +23,7 @@
         /// <param name="reference">The reference.</param>
         private JavaScriptValue(IntPtr reference)
         {
-            this.reference = reference;
+            _reference = reference;
         }
 
         /// <summary>
@@ -119,7 +119,7 @@
         /// </summary>
         public bool IsValid
         {
-            get { return reference != IntPtr.Zero; }
+            get { return _reference != IntPtr.Zero; }
         }
 
         /// <summary>
@@ -155,6 +155,11 @@
                 return length;
             }
         }
+
+        /// <summary>
+        /// The internal native JS value reference.
+        /// </summary>
+        public IntPtr Reference => _reference;
 
         /// <summary>
         ///     Gets or sets the prototype of an object.
@@ -462,8 +467,8 @@
         ///     Adds a reference to the object.
         /// </summary>
         /// <remarks>
-        ///     This only needs to be called on objects that are not going to be stored somewhere on 
-        ///     the stack. Calling AddRef ensures that the JavaScript object the value refers to will not be freed 
+        ///     This only needs to be called on objects that are not going to be stored somewhere on
+        ///     the stack. Calling AddRef ensures that the JavaScript object the value refers to will not be freed
         ///     until Release is called
         /// </remarks>
         /// <returns>The object's new reference count.</returns>
@@ -507,7 +512,7 @@
         /// </summary>
         /// <remarks>
         ///     <para>
-        ///     This function retrieves the value of a Number value. It will fail with 
+        ///     This function retrieves the value of a Number value. It will fail with
         ///     <c>InvalidArgument</c> if the type of the value is not <c>Number</c>.
         ///     </para>
         ///     <para>
@@ -547,7 +552,7 @@
         /// </summary>
         /// <remarks>
         ///     <para>
-        ///     This function retrieves the string pointer of a <c>String</c> value. It will fail with 
+        ///     This function retrieves the string pointer of a <c>String</c> value. It will fail with
         ///     <c>InvalidArgument</c> if the type of the value is not <c>String</c>.
         ///     </para>
         ///     <para>
