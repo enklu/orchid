@@ -1,7 +1,6 @@
 namespace Enklu.Orchid.Chakra
 {
     using System;
-    using System.Runtime.Serialization;
 
     /// <summary>
     ///     An exception returned from the Chakra engine.
@@ -14,7 +13,7 @@ namespace Enklu.Orchid.Chakra
         private readonly JavaScriptErrorCode code;
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="JavaScriptException"/> class. 
+        ///     Initializes a new instance of the <see cref="JavaScriptException"/> class.
         /// </summary>
         /// <param name="code">The error code returned.</param>
         public JavaScriptException(JavaScriptErrorCode code) :
@@ -23,7 +22,7 @@ namespace Enklu.Orchid.Chakra
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="JavaScriptException"/> class. 
+        ///     Initializes a new instance of the <see cref="JavaScriptException"/> class.
         /// </summary>
         /// <param name="code">The error code returned.</param>
         /// <param name="message">The error message.</param>
@@ -34,7 +33,7 @@ namespace Enklu.Orchid.Chakra
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="JavaScriptException"/> class. 
+        ///     Initializes a new instance of the <see cref="JavaScriptException"/> class.
         /// </summary>
         /// <param name="info">The serialization info.</param>
         /// <param name="context">The streaming context.</param>

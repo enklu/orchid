@@ -1,7 +1,6 @@
 namespace Enklu.Orchid.Chakra
 {
     using System;
-    using System.Runtime.Serialization;
 
     /// <summary>
     ///     An exception that occurred in the workings of the JavaScript engine itself.
@@ -9,7 +8,7 @@ namespace Enklu.Orchid.Chakra
     public sealed class JavaScriptEngineException : JavaScriptException
     {
         /// <summary>
-        ///     Initializes a new instance of the <see cref="JavaScriptEngineException"/> class. 
+        ///     Initializes a new instance of the <see cref="JavaScriptEngineException"/> class.
         /// </summary>
         /// <param name="code">The error code returned.</param>
         public JavaScriptEngineException(JavaScriptErrorCode code) :
@@ -18,7 +17,7 @@ namespace Enklu.Orchid.Chakra
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="JavaScriptEngineException"/> class. 
+        ///     Initializes a new instance of the <see cref="JavaScriptEngineException"/> class.
         /// </summary>
         /// <param name="code">The error code returned.</param>
         /// <param name="message">The error message.</param>

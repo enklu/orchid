@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Enklu.Orchid.Chakra;
 using Enklu.Orchid.Chakra.Interop;
 using NUnit.Framework;
@@ -523,6 +524,149 @@ namespace Enklu.Orchid.Chakra.Tests
                     }
 
                     DoSomething(onDoSomething);
+                ");
+            });
+        }
+
+        [Test]
+        public void GetWithJsCallback()
+        {
+            RunTest(context =>
+            {
+                context.RunScript(@"
+                    function foo(a, b, c) {
+                        console.log('a: ' + a + ', b: ' + b + ', c: ' + c);
+                    }");
+
+                var callback = context.GetValue<IJsCallback>("foo");
+                callback.Invoke("a", 23, 51);
+            });
+        }
+
+        public class ThisBinding
+        {
+            private string _name;
+            public string Name
+            {
+                get => _name;
+                set
+                {
+                    _name = value;
+                    Console.WriteLine("Name is: {0}", _name);
+                }
+            }
+
+        }
+
+        [Test]
+        public void ThisBindingTest()
+        {
+            RunTest(context =>
+            {
+                var thisBinding = new ThisBinding();
+
+                context.RunScript(thisBinding, @"
+                    var self = this;
+
+                    function enter() {
+                        self.Name = 'Slim Shady';
+                    }
+                ");
+
+                IJsCallback enter = context.GetValue<IJsCallback>("enter");
+                enter.Invoke();
+            });
+        }
+
+        public class RequiresFoo
+        {
+            public int IntProp { get; set; }
+
+            private IJsCallback _callback;
+
+            public void register(string name, IJsCallback callback)
+            {
+                Console.WriteLine("register: " + name);
+                _callback = callback;
+            }
+
+            public void Update(Context context)
+            {
+                _callback.Apply(this, context);
+            }
+        }
+
+        public class Context
+        {
+            public Context scale(float s)
+            {
+                return this;
+            }
+
+            public Context add(float x, float y)
+            {
+                return this;
+            }
+
+            public Context color(float r, float g, float b)
+            {
+                return this;
+            }
+        }
+
+        [Test]
+        public void TestRequires()
+        {
+            Context c = new Context();
+            RequiresFoo foo = new RequiresFoo() {IntProp = 15};
+
+            Func<string, object> Resolve = s => foo;
+
+            RunTest(context =>
+            {
+
+                context.SetValue("require", new Func<string, object>(value => Resolve(value)));
+
+                context.RunScript(@"
+                    var drawing = require('drawing') || { register: function() {} };
+
+                    drawing.register('test', draw);
+
+                    function draw(context) {
+                        context
+                            .scale(0.1).add(3.2, 1.5).color(23, 21, 23)
+                            .add(5.2, 2.3).scale(0.1);
+                    }
+                ");
+
+                for (int i = 0; i < 100; ++i)
+                {
+                    foo.Update(c);
+                    Thread.Sleep(25);
+                }
+
+            });
+        }
+
+        [Test]
+        public void TestEcma6()
+        {
+            RunTest(context =>
+            {
+                context.RunScript(@"
+                    class Shape {
+                        constructor (id, x, y) {
+                            this.id = id
+                            this.move(x, y)
+                        }
+                        move (x, y) {
+                            this.x = x
+                            this.y = y
+                        }
+                    }
+
+                    var s = new Shape('hello', 10, 5);
+                    console.log(s.x + ' ' + s.y);
                 ");
             });
         }

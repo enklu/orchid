@@ -478,6 +478,70 @@ namespace Enklu.Orchid.Jint.Tests
                 ");
             });
         }
+
+        [Test]
+        public void GetWithJsCallback()
+        {
+            RunTest(context =>
+            {
+                context.RunScript(@"
+                    function foo(a, b, c) {
+                        console.log('a: ' + a + ', b: ' + b + ', c: ' + c);
+                    }
+                    var testStr = 'hello world';
+                    var testInt = 123;
+                    var testNum = 32.3;
+                    ");
+
+                var callback = context.GetValue<IJsCallback>("foo");
+                callback.Invoke("a", 23, 51);
+
+                var callback2 = context.GetValue<IJsCallback>("foo");
+                Assert.IsTrue(callback == callback2);
+
+                var testStr = context.GetValue<string>("testStr");
+                var testInt = context.GetValue<int>("testInt");
+                var testNum = context.GetValue<float>("testNum");
+
+                Console.WriteLine($"a: {testStr}, b: {testInt}, c: {testNum}");
+            });
+        }
+
+        public class ThisBinding
+        {
+            private string _name;
+            public string Name
+            {
+                get => _name;
+                set
+                {
+                    _name = value;
+                    Console.WriteLine("Name is: {0}", _name);
+                }
+            }
+
+        }
+
+        [Test]
+        public void ThisBindingTest()
+        {
+            RunTest(context =>
+            {
+                var thisBinding = new ThisBinding();
+
+                context.RunScript(thisBinding, @"
+                    var self = this;
+
+                    function enter() {
+                        self.Name = 'Slim Shady';
+                    }
+                ");
+
+                IJsCallback enter = context.GetValue<IJsCallback>("enter");
+                enter.Invoke();
+            });
+        }
+
         /*
         [Test]
         public void DelegateTest()

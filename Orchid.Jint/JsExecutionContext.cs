@@ -1,5 +1,6 @@
 ﻿using System;
 using Jint;
+using Jint.Native;
 
 namespace Enklu.Orchid.Jint
 {
@@ -21,33 +22,38 @@ namespace Enklu.Orchid.Jint
         public T GetValue<T>(string name)
         {
             var value = _engine.GetValue(name);
-            return value.To<T>();
+            return value.To<T>(_engine.ClrTypeConverter);
         }
 
         public void SetValue<T>(string name, T value)
         {
-            var type = typeof(T);
+            // Ensure that we're getting type information from the
+            // highest resolution type.
+            var valueType = value.GetType();
+            var type = valueType.IsAssignableFrom(typeof(T))
+                ? typeof(T)
+                : valueType;
             var objValue = (object) value;
 
-            if (type.IsAssignableFrom(typeof(Delegate)))
+            if (typeof(Delegate).IsAssignableFrom(type))
             {
                 _engine.SetValue(name, (Delegate) objValue);
                 return;
             }
 
-            if (type == typeof(bool))
+            if (typeof(bool).IsAssignableFrom(type))
             {
                 _engine.SetValue(name, (bool) objValue);
                 return;
             }
 
-            if (type.IsAssignableFrom(typeof(double)))
+            if (typeof(double).IsAssignableFrom(type))
             {
                 _engine.SetValue(name, (double) objValue);
                 return;
             }
 
-            if (type == typeof(string))
+            if (typeof(string).IsAssignableFrom(type))
             {
                 _engine.SetValue(name, (string) objValue);
                 return;
@@ -59,6 +65,17 @@ namespace Enklu.Orchid.Jint
         public void RunScript(string script)
         {
             _engine.Execute(script);
+        }
+
+        public void RunScript(object @this, string script)
+        {
+            var jsThis = JsValue.FromObject(_engine, @this);
+            var currentThis = _engine.ExecutionContext.ThisBinding;
+            _engine.ExecutionContext.ThisBinding = jsThis;
+
+            _engine.Execute(script);
+
+            _engine.ExecutionContext.ThisBinding = currentThis;
         }
     }
 }

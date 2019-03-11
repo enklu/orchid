@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 
 namespace Enklu.Orchid.Chakra.Interop
 {
@@ -94,7 +95,22 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <typeparam name="T"></typeparam>
         /// <param name="name"></param>
         /// <param name="value"></param>
-        public void SetValue<T>(string name, T value) => SetValue(name, value, typeof(T));
+        public void SetValue<T>(string name, T value)
+        {
+            if (value == null)
+            {
+                SetValue(name, value, typeof(T));
+                return;
+            }
+
+            // Resolve highest resolution type
+            var valueType = value.GetType();
+            var type = valueType.IsAssignableFrom(typeof(T))
+                ? typeof(T)
+                : valueType;
+
+            SetValue(name, value, type);
+        }
 
         /// <summary>
         ///

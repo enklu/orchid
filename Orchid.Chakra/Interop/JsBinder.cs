@@ -16,6 +16,7 @@ namespace Enklu.Orchid.Chakra.Interop
     public class JsBinder
     {
         private readonly JsContextScope _scope;
+        private readonly JsObjectCache _objects;
         private readonly JavaScriptObjectBeforeCollectCallback _jsGcCollect;
 
         /// <summary>
@@ -24,6 +25,7 @@ namespace Enklu.Orchid.Chakra.Interop
         public JsBinder(JsContextScope scope)
         {
             _scope = scope;
+            _objects = new JsObjectCache();
             _jsGcCollect = JsGcCollect;
         }
 
@@ -67,6 +69,9 @@ namespace Enklu.Orchid.Chakra.Interop
                 var ptr = Link(jsValue, instance);
                 jsValue.ExternalData = ptr;
 
+                // Create an object entry to map host objects back to JS Objects
+                _objects.Add(instance, jsValue);
+
                 return jsValue;
             });
         }
@@ -93,6 +98,22 @@ namespace Enklu.Orchid.Chakra.Interop
             }
 
             return handle.Target;
+        }
+
+        /// <summary>
+        /// This method will lookup a <see cref="JavaScriptValue"/> from a host object. This lookup requires that the
+        /// JavaScript object was bound to a host object using the <see cref="BindObject{T}"/> method.
+        /// </summary>
+        /// <param name="obj">The host object that was bound to a JavaScript object.</param>
+        /// <returns>The JS object reference bound to the host object if it exists. Otherwise, <see cref="JavaScriptValue.Invalid"/></returns>
+        public JavaScriptValue JsObjectLinkedTo(object obj)
+        {
+            if (_objects.TryGet(obj, out var jsValue))
+            {
+                return jsValue;
+            }
+
+            return JavaScriptValue.Invalid;
         }
 
         /// <summary>
@@ -124,6 +145,11 @@ namespace Enklu.Orchid.Chakra.Interop
         private void JsGcCollect(JavaScriptValue jsValue, IntPtr externalData)
         {
             var handle = GCHandle.FromIntPtr(externalData);
+            if (handle.IsAllocated)
+            {
+                _objects.Remove(handle.Target);
+            }
+
             handle.Free();
         }
     }

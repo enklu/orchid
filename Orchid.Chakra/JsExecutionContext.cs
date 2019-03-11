@@ -102,6 +102,30 @@ namespace Enklu.Orchid.Chakra
         }
 
         /// <summary>
+        /// Executes JavaScript in the context of the <c>@this</c> parameter.
+        /// </summary>
+        /// <param name="@this">The context of execution.</param>
+        /// <param name="script">The script to run</param>
+        public void RunScript(object @this, string script)
+        {
+            _scope.Run(() =>
+            {
+                try
+                {
+                    var fn = JavaScriptContext.ParseScript(script);
+                    var jsObject = _interop.ToJsObject(@this, @this.GetType());
+                    fn.CallFunction(jsObject);
+                }
+                catch (JavaScriptScriptException e)
+                {
+                    var error = e.Error;
+                    var message = error.GetProperty(JavaScriptPropertyId.FromString("message")).ToString();
+                    throw new Exception(message);
+                }
+            });
+        }
+
+        /// <summary>
         /// Creates a new JavaScript object than can be modified directly and passed into <see cref="SetValue{T}"/>
         /// as a property of global.
         /// </summary>

@@ -1,7 +1,6 @@
 ﻿namespace Enklu.Orchid.Chakra
 {
     using System;
-    using System.Runtime.Serialization;
 
     /// <summary>
     ///     An API usage exception occurred.
@@ -9,7 +8,7 @@
     public sealed class JavaScriptUsageException : JavaScriptException
     {
         /// <summary>
-        ///     Initializes a new instance of the <see cref="JavaScriptUsageException"/> class. 
+        ///     Initializes a new instance of the <see cref="JavaScriptUsageException"/> class.
         /// </summary>
         /// <param name="code">The error code returned.</param>
         public JavaScriptUsageException(JavaScriptErrorCode code) :
@@ -18,7 +17,7 @@
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="JavaScriptUsageException"/> class. 
+        ///     Initializes a new instance of the <see cref="JavaScriptUsageException"/> class.
         /// </summary>
         /// <param name="code">The error code returned.</param>
         /// <param name="message">The error message.</param>

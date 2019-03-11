@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace Enklu.Orchid.Chakra.Interop
 {
@@ -185,6 +186,14 @@ namespace Enklu.Orchid.Chakra.Interop
                             return JavaScriptValue.Invalid;
                         }
 
+                        if (null != result)
+                        {
+                            var valueType = result.GetType();
+                            resultType = valueType.IsAssignableFrom(resultType)
+                                ? resultType
+                                : valueType;
+                        }
+
                         return _interop.ToJsObject(result, resultType);
                     });
             }
@@ -209,6 +218,14 @@ namespace Enklu.Orchid.Chakra.Interop
                         var get = hostType.PropertyFor(propertyName).Getter;
                         var returnType = get.ReturnType;
                         var result = get.Invoke(instance, EmptyParameters);
+
+                        if (null != result)
+                        {
+                            var valueType = result.GetType();
+                            returnType = valueType.IsAssignableFrom(returnType)
+                                ? returnType
+                                : valueType;
+                        }
 
                         return _interop.ToJsObject(result, returnType);
                     },
@@ -243,6 +260,14 @@ namespace Enklu.Orchid.Chakra.Interop
                         var fieldInfo = hostType.FieldFor(fieldName).Field;
                         var returnType = fieldInfo.FieldType;
                         var result = fieldInfo.GetValue(instance);
+
+                        if (null != result)
+                        {
+                            var valueType = result.GetType();
+                            returnType = valueType.IsAssignableFrom(returnType)
+                                ? returnType
+                                : valueType;
+                        }
 
                         return _interop.ToJsObject(result, returnType);
                     },

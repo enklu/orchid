@@ -1,7 +1,6 @@
 namespace Enklu.Orchid.Chakra
 {
     using System;
-    using System.Runtime.Serialization;
 
     /// <summary>
     ///     A script exception.
@@ -14,7 +13,7 @@ namespace Enklu.Orchid.Chakra
         private readonly JavaScriptValue error;
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="JavaScriptScriptException"/> class. 
+        ///     Initializes a new instance of the <see cref="JavaScriptScriptException"/> class.
         /// </summary>
         /// <param name="code">The error code returned.</param>
         /// <param name="error">The JavaScript error object.</param>
@@ -24,7 +23,7 @@ namespace Enklu.Orchid.Chakra
         }
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="JavaScriptScriptException"/> class. 
+        ///     Initializes a new instance of the <see cref="JavaScriptScriptException"/> class.
         /// </summary>
         /// <param name="code">The error code returned.</param>
         /// <param name="error">The JavaScript error object.</param>

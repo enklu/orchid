@@ -474,7 +474,7 @@ namespace Enklu.Orchid.Chakra.Interop
                 var paramExpr = parameters[i];
 
                 // Box value types
-                var convertedParamExpr = paramExpr.Type.IsValueType
+                var convertedParamExpr = paramExpr.Type.GetTypeInfo().IsValueType
                     ? (Expression)Expression.Convert(paramExpr, typeof(object))
                     : paramExpr;
 
@@ -641,6 +641,14 @@ namespace Enklu.Orchid.Chakra.Interop
                     return JavaScriptValue.Invalid;
                 }
 
+                if (null != result)
+                {
+                    var valueType = result.GetType();
+                    resultType = valueType.IsAssignableFrom(resultType)
+                        ? resultType
+                        : valueType;
+                }
+
                 return ToJsObject(result, resultType);
             };
 
@@ -653,6 +661,14 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <remarks>This call requires an active context.</remarks>
         public JavaScriptValue ToBoundJsObject(object obj, Type type)
         {
+            // Try and lookup linked JSValue to an existing host object.
+            // Failures are represented by Invalid
+            var linkedValue = _binder.JsObjectLinkedTo(obj);
+            if (linkedValue.IsValid)
+            {
+                return linkedValue;
+            }
+
             var binding = NewBuilder()
                 .BoundTo(obj, type)
                 .Build();

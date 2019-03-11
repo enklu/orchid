@@ -16,7 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-      <ProjectReference Include="..\Orchid.Chakra\Orchid.Chakra.csproj"/>
+    <ProjectReference Include="..\Orchid\Orchid.csproj"/>
+    <ProjectReference Include="..\Orchid.Chakra\Orchid.Chakra.csproj"/>
   </ItemGroup>
 
   <!-- 

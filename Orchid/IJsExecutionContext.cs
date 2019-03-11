@@ -22,5 +22,12 @@
         /// Executes JavaScript code in the context of the global object/scope.
         /// </summary>
         void RunScript(string script);
+
+        /// <summary>
+        /// Executes JavaScript in the context of the <c>@this</c> parameter.
+        /// </summary>
+        /// <param name="@this">The context of execution.</param>
+        /// <param name="script">The script to run</param>
+        void RunScript(object @this, string script);
     }
 }
