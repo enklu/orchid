@@ -19,6 +19,11 @@ namespace Enklu.Orchid.Jint
             _engine = engine;
         }
 
+        public IJsModule NewModule(string moduleId)
+        {
+            return new JsModule(_engine, moduleId);
+        }
+
         public T GetValue<T>(string name)
         {
             var value = _engine.GetValue(name);
@@ -70,12 +75,19 @@ namespace Enklu.Orchid.Jint
         public void RunScript(object @this, string script)
         {
             var jsThis = JsValue.FromObject(_engine, @this);
-            var currentThis = _engine.ExecutionContext.ThisBinding;
-            _engine.ExecutionContext.ThisBinding = jsThis;
+            var jsScript = string.Format("(function() {{ {0} }})", script);
 
-            _engine.Execute(script);
+            var fn = _engine.Execute(jsScript).GetCompletionValue();
+            _engine.Invoke(fn, jsThis, new object[] { });
+        }
 
-            _engine.ExecutionContext.ThisBinding = currentThis;
+        public void RunScript(object @this, string script, IJsModule module)
+        {
+            var jsThis = JsValue.FromObject(_engine, @this);
+            var jsScript = string.Format("(function(module) {{ {0} }})", script);
+
+            var fn = _engine.Execute(jsScript).GetCompletionValue();
+            _engine.Invoke(fn, jsThis, new object[] { ((JsModule) module).Module });
         }
     }
 }

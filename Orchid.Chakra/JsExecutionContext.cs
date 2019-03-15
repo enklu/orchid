@@ -58,6 +58,16 @@ namespace Enklu.Orchid.Chakra
         }
 
         /// <summary>
+        /// Creates a new <see cref="IJsModule"/> implementation which can be passed to <see cref="RunScript(string)"/>
+        /// </summary>
+        /// <param name="moduleId"></param>
+        /// <returns></returns>
+        public IJsModule NewModule(string moduleId)
+        {
+            return new JsModule(_scope, _binder, _interop, moduleId);
+        }
+
+        /// <summary>
         /// Gets a raw <see cref="JavaScriptValue"/> from the global object/scope.
         /// </summary>
         public JavaScriptValue GetValue(string name)
@@ -112,9 +122,37 @@ namespace Enklu.Orchid.Chakra
             {
                 try
                 {
-                    var fn = JavaScriptContext.ParseScript(script);
+                    var fnScript = $"(function() {{ {script} }});";
+                    var fn = JavaScriptContext.RunScript(fnScript);
                     var jsObject = _interop.ToJsObject(@this, @this.GetType());
                     fn.CallFunction(jsObject);
+                }
+                catch (JavaScriptScriptException e)
+                {
+                    var error = e.Error;
+                    var message = error.GetProperty(JavaScriptPropertyId.FromString("message")).ToString();
+                    throw new Exception(message);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Executes JavaScript in the context of the <c>@this</c> parameter, and allow exporting
+        /// to a specific <see cref="IJsModule"/>.
+        /// </summary>
+        /// <param name="@this">The context of execution.</param>
+        /// <param name="script">The script to run</param>
+        /// <param name="module">The module to export any inner properties to.</param>
+        public void RunScript(object @this, string script, IJsModule module)
+        {
+            _scope.Run(() =>
+            {
+                try
+                {
+                    var fnScript = $"(function(module) {{ {script} }});";
+                    var fn = JavaScriptContext.RunScript(fnScript);
+                    var jsObject = _interop.ToJsObject(@this, @this.GetType());
+                    fn.CallFunction(jsObject, ((JsModule) module).Module.Object);
                 }
                 catch (JavaScriptScriptException e)
                 {
@@ -136,6 +174,14 @@ namespace Enklu.Orchid.Chakra
                 var jsValue = JavaScriptValue.CreateObject();
 
                 return new JsBinding(_scope, _binder, _interop, jsValue);
+            });
+        }
+
+        public void GC()
+        {
+            _scope.Run(() =>
+            {
+                _runtime.CollectGarbage();
             });
         }
 
