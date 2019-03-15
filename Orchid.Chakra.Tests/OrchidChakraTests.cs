@@ -3,13 +3,44 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using Enklu.Orchid.Chakra;
 using Enklu.Orchid.Chakra.Interop;
+using Enklu.Orchid.Logging;
 using NUnit.Framework;
 
 namespace Enklu.Orchid.Chakra.Tests
 {
+    public class TestLogAdapter : ILogAdapter
+    {
+        public void Debug(object caller, object message, params object[] replacements)
+        {
+            Console.WriteLine(string.Format((string)message, replacements));
+        }
+
+        public void Info(object caller, object message, params object[] replacements)
+        {
+            Console.WriteLine(string.Format((string)message, replacements));
+        }
+
+        public void Warning(object caller, object message, params object[] replacements)
+        {
+            Console.WriteLine(string.Format((string)message, replacements));
+        }
+
+        public void Error(object caller, object message, params object[] replacements)
+        {
+            Console.WriteLine(string.Format((string)message, replacements));
+        }
+
+        public void Fatal(object caller, object message, params object[] replacements)
+        {
+            Console.WriteLine(string.Format((string)message, replacements));
+        }
+    }
+
     public class SimpleObject
     {
         public byte A { get; set; }
@@ -258,6 +289,8 @@ namespace Enklu.Orchid.Chakra.Tests
                 HH = new[] {"hello", "world", "test"}
             };
             _totalLogCalls = 0;
+
+            Log.SetAdapter(new TestLogAdapter());
         }
 
         [Test]
@@ -433,7 +466,7 @@ namespace Enklu.Orchid.Chakra.Tests
                     console.log(w.StrProp);");
             });
         }
-
+        /*
         [Test]
         public void ListTest()
         {
@@ -447,6 +480,7 @@ namespace Enklu.Orchid.Chakra.Tests
                     }");
             });
         }
+        */
 
         public class DelegateRefTester
         {
@@ -543,41 +577,6 @@ namespace Enklu.Orchid.Chakra.Tests
             });
         }
 
-        public class ThisBinding
-        {
-            private string _name;
-            public string Name
-            {
-                get => _name;
-                set
-                {
-                    _name = value;
-                    Console.WriteLine("Name is: {0}", _name);
-                }
-            }
-
-        }
-
-        [Test]
-        public void ThisBindingTest()
-        {
-            RunTest(context =>
-            {
-                var thisBinding = new ThisBinding();
-
-                context.RunScript(thisBinding, @"
-                    var self = this;
-
-                    function enter() {
-                        self.Name = 'Slim Shady';
-                    }
-                ");
-
-                IJsCallback enter = context.GetValue<IJsCallback>("enter");
-                enter.Invoke();
-            });
-        }
-
         public class RequiresFoo
         {
             public int IntProp { get; set; }
@@ -670,42 +669,366 @@ namespace Enklu.Orchid.Chakra.Tests
                 ");
             });
         }
-        /*
+
+        public class BaseClass
+        {
+            public void DoSomething(int a)
+            {
+                Console.WriteLine("A: " + a);
+            }
+        }
+
+        public class SubClass : BaseClass
+        {
+            public void DoAThing(int b)
+            {
+                //
+            }
+        }
+
         [Test]
-        public void DelegateTest()
+        public void BaseClassTest()
         {
             RunTest(context =>
             {
-                Action callback1 = () =>
-                {
-                    Console.WriteLine("Callback #1 Called!");
-                };
+                var a = new SubClass();
 
-                Action<string> callback2 = s =>
-                {
-                    Console.WriteLine("Callback #2 Called With: {0}", s);
-                };
-
-                Func<string, int> callback3 = s =>
-                {
-                    int retVal = 32;
-                    Console.WriteLine("Callback #3 Called With: {0}, Returning: {1}", s, retVal);
-                    return retVal;
-                };
-
-                context.SetValue("callback1", (Delegate) callback1);
-                context.SetValue("callback2", (Delegate) callback2);
-                context.SetValue("callback3", (Delegate) callback3);
-
-                context.RunScript(@"
-                    callback1();
-                    callback2('2-input');
-                    var result = callback3('3-input');
-
-                    console.log('Result: ' + result);
+                context.RunScript(a, @"
+                    this.DoAThing(5);
+                    this.DoSomething(10);
                 ");
             });
         }
-        */
+
+        public class InnerInner
+        {
+            public void Dive(Action<Action<int>> callback)
+            {
+                Console.WriteLine("InnerInner::Dive()");
+
+                callback((i) =>
+                {
+                    Console.WriteLine("InnerInner::Dive::callback()");
+
+                    Boom();
+                });
+            }
+
+            private void Boom()
+            {
+                throw new Exception("Boom!");
+            }
+        }
+
+        public class Inner
+        {
+            public InnerInner Dive()
+            {
+                Console.WriteLine("Inner::Dive()");
+                return new InnerInner();
+            }
+        }
+
+        public class Outer
+        {
+            public void Dive(Action<Inner> action)
+            {
+                Console.WriteLine("Outer::Dive()");
+                action(new Inner());
+            }
+        }
+
+        [Test]
+        public void DeepExceptionPropagationTest()
+        {
+            RunTest(context =>
+            {
+                var outer = new Outer();
+                //context.SetValue("outer", outer);
+                context.RunScript(@"
+                    function acceptOuter(o) {
+                        o.Dive(function(inner) {
+                            var innerInner = inner.Dive();
+
+                            innerInner.Dive(function(callback) {
+                                console.log('innerInner.Dive()');
+                                callback(5);
+                            });
+                        });
+                    }
+                ");
+
+                var callback = context.GetValue<IJsCallback>("acceptOuter");
+                Action a = () => callback.Invoke(outer);
+                context.SetValue("execute", a);
+
+                Exception e = null;
+                try
+                {
+                    context.RunScript("execute();");
+                }
+                catch (Exception ee)
+                {
+                    e = ee;
+                }
+
+                Assert.IsNotNull(e);
+            });
+        }
+
+        public class CallCount
+        {
+            public int CallCounter { get; set; } = 0;
+
+            public void doThing()
+            {
+                Console.WriteLine("doThing()");
+                CallCounter++;
+            }
+        }
+
+        [Test]
+        public void ModuleTest()
+        {
+            RunTest(context =>
+            {
+                var script = @"
+                    const self = this;
+
+                    function enter() {
+                        console.log('enter()');
+                        self.doThing();
+                    }
+
+                    function update() {
+                        console.log('update()');
+                    }
+
+                    function exit()
+                    {
+                        console.log('exit');
+                    }
+
+                    function msgMissing()
+                    {
+                        console.log('msgMissing');
+                    }
+
+                    if (typeof module !== 'undefined')
+                    {
+                        module.exports = {
+                            enter: enter,
+                            update: update,
+                            exit: exit,
+                            msgMissing: msgMissing
+                        };
+                    }";
+
+                var cc = new CallCount();
+                var module = context.NewModule("module_1234");
+
+                context.RunScript(cc, script, module);
+
+                var fn = module.GetExportedValue<IJsCallback>("enter");
+                fn.Invoke();
+            });
+        }
+
+        public class BaseReflectionTestObject
+        {
+            public string BaseField = "bfield";
+
+            public int BaseProp { get; set; }
+
+            public void BaseMethod()
+            { }
+        }
+
+        [JsDeclaredOnly]
+        public class ReflectionTestObject : BaseReflectionTestObject
+        {
+            public string Field = "field";
+
+            [DenyJsAccess]
+            public string IgnoredField = "ignored";
+
+            public int Prop { get; set; }
+
+            [DenyJsAccess]
+            public int IgnoredProp { get; set; }
+
+            public void Method() { }
+
+            [DenyJsAccess]
+            public void IgnoredMethod() { }
+        }
+
+
+        [Test]
+        public void TestHostTypeCacheReflection()
+        {
+            var typeCache = new HostTypeCache();
+
+            var t = typeCache.Get<ReflectionTestObject>();
+
+            Assert.IsFalse(t.MethodNames.Contains("BaseMethod"));
+            Assert.IsFalse(t.PropertyNames.Contains("BaseProp"));
+            Assert.IsFalse(t.FieldNames.Contains("BaseField"));
+
+            Assert.IsTrue(t.MethodNames.Contains("Method"));
+            Assert.IsFalse(t.MethodNames.Contains("IgnoredMethod"));
+            Assert.IsTrue(t.PropertyNames.Contains("Prop"));
+            Assert.IsFalse(t.PropertyNames.Contains("IgnoredProp"));
+            Assert.IsTrue(t.FieldNames.Contains("Field"));
+            Assert.IsFalse(t.FieldNames.Contains("IgnoredField"));
+
+        }
+
+        public class Element
+        {
+            public string Name { get; set; }
+        }
+
+        public class ArrayContainer
+        {
+            public Element[] Elements { get; set; } =
+            {
+                new Element {Name = "A"},
+                new Element {Name = "B"},
+                new Element {Name = "C"},
+                new Element {Name = "D"},
+                new Element {Name = "E"},
+                new Element {Name = "F"},
+                new Element {Name = "G"},
+                new Element {Name = "H"}
+            };
+        }
+
+        [Test]
+        public void TestArrayStuff()
+        {
+            RunTest(context =>
+            {
+                context.SetValue("ele", new ArrayContainer());
+                context.RunScript(@"
+                    var elements = ele.Elements;
+
+                    for (var i in elements) {
+                        console.log(elements[i].Name);
+                    }
+                ");
+            });
+        }
+
+        public class FooObj
+        {
+            public string Name { get; set; }
+        }
+
+        public class VarArgTest
+        {
+            private readonly Action<int> OnCall;
+
+            public VarArgTest(Action<int> onCall)
+            {
+                OnCall = onCall;
+            }
+
+            public void Accept(string a, string b)
+            {
+                Console.WriteLine("First Accept");
+                OnCall(1);
+            }
+            public void Accept(string a, int b, params object[] strings)
+            {
+                Console.WriteLine("Second Accept");
+                OnCall(2);
+            }
+
+            public void Accept(FooObj foo, params object[] obj)
+            {
+                Console.WriteLine("Third Accept");
+                OnCall(3);
+            }
+
+            public void Accept(int i = 5, params object[] obj)
+            {
+                Console.WriteLine("Fourth Accept");
+                OnCall(4);
+            }
+
+            public void Accept(bool a, string b = "hello", int r = 23, params string[] strs)
+            {
+                Console.WriteLine("Fifth Accept");
+                OnCall(5);
+            }
+
+            public void Accept(int a, int[] ints, params string[] strs)
+            {
+                Console.WriteLine("Sixth Accept");
+                OnCall(6);
+            }
+        }
+
+        [Test]
+        public void TestVarArgs()
+        {
+            int[] callArray = new int[6];
+
+            Action<int> onCall = i =>
+            {
+                callArray[i - 1]++;
+            };
+
+            RunTest(context =>
+            {
+                var vaTest = new VarArgTest(onCall);
+                context.SetValue("vaTest", vaTest);
+                context.SetValue("t", new CallCount());
+                context.RunScript("vaTest.Accept('hello', 13);");
+                context.RunScript("vaTest.Accept('test', 13, 'a', 'b', 'c', 'd', 'e', 'f', 32.5, t);");
+                context.RunScript("vaTest.Accept('test', 'me again');");
+                context.SetValue("foo", new FooObj {Name = "Bill"});
+                context.RunScript("vaTest.Accept(foo, 1, 2, 3);");
+                context.RunScript("vaTest.Accept();");
+                Assert.Throws<Exception>(() =>
+                {
+                    context.RunScript("vaTest.Accept('test', 'me', 1, 2, 3);");
+                });
+                context.SetValue("foo", new FooObj {Name = "Bill"});
+                context.RunScript("vaTest.Accept(foo, 1, 2, 3);");
+
+                context.RunScript("vaTest.Accept(55, 'hi');");
+                context.RunScript("vaTest.Accept(true, 'hiyo', 15, 'what', 'up', 'brother?');");
+                context.RunScript("vaTest.Accept(23, 'hiyo', 15, 'what', 'up', 'brother?', foo);");
+                Assert.Throws<Exception>(() =>
+                {
+                    context.RunScript("vaTest.Accept(false, 'hiyo', 15, 'what', 'up', 'brother?', foo);");
+                });
+                context.RunScript("vaTest.Accept(5, [ 1, 2, 3, 4, 5 ], 'whee', 'whee', 'what');");
+            });
+
+            Asserter.AreEqual(callArray, new int[] {1, 2, 2, 3, 1, 1});
+        }
+
+        public class OptParam
+        {
+            public void dispatch(string eventType, object evt = null)
+            {
+                Console.WriteLine($"EventType: {eventType}, evt: {evt}");
+            }
+        }
+
+        [Test]
+        public void OptionalParamTest()
+        {
+            RunTest(context =>
+            {
+                context.SetValue("d", new OptParam());
+                context.RunScript(@"
+                    d.dispatch('my-evt');
+                ");
+            });
+        }
     }
 }

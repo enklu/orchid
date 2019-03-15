@@ -23,9 +23,9 @@ namespace Enklu.Orchid.Chakra.Interop
         IList<string> FieldNames { get; }
 
         /// <summary>
-        /// This method returns the first method available that matches the name and the # of parameters.
+        /// This method returns a list of method available that matches the name and the # of parameters.
         /// </summary>
-        HostMethod MethodFor(string methodName, int totalParams);
+        List<HostMethod> MethodsFor(string methodName, int totalParams);
 
         /// <summary>
         /// This method returns a <see cref="HostProperty"/> for the property name provided.

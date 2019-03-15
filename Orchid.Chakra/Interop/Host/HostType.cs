@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -16,6 +17,11 @@ namespace Enklu.Orchid.Chakra.Interop
         private List<string> _methodNames;
         private List<string> _propertyNames;
         private List<string> _fieldNames;
+
+        /// <summary>
+        /// Scratch list for returning method lookups.
+        /// </summary>
+        private List<HostMethod> _scratch = new List<HostMethod>();
 
         /// <summary>
         /// Method Names
@@ -43,12 +49,31 @@ namespace Enklu.Orchid.Chakra.Interop
                 _methods[methodName] = new List<HostMethod>();
             }
 
+            var parameters = method.GetParameters();
+            bool isVarArgs = false;
+            if (parameters.Length > 0)
+            {
+                var lastParam = parameters[parameters.Length - 1];
+                isVarArgs = lastParam.GetCustomAttribute<ParamArrayAttribute>() != null;
+            }
+
+            var totalOptional = 0;
+            for (var i = 0; i < parameters.Length; ++i)
+            {
+                if (parameters[i].IsOptional)
+                {
+                    totalOptional++;
+                }
+            }
+
             _methods[methodName]
                 .Add(new HostMethod
                 {
                     Method = method,
-                    Parameters = method.GetParameters(),
-                    ReturnType = method.ReturnType
+                    Parameters = parameters,
+                    ReturnType = method.ReturnType,
+                    OptionalParameters = totalOptional,
+                    IsVarArgs = isVarArgs
                 });
         }
 
@@ -94,22 +119,36 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <summary>
         /// This method returns the first method available that matches the name and the # of parameters.
         /// </summary>
-        public HostMethod MethodFor(string methodName, int totalParams)
+        public List<HostMethod> MethodsFor(string methodName, int totalParams)
         {
-            // FIXME: This is error prone as overloaded methods can contain the same # of parameters.
-            // FIXME: We should determine if each javascript parameter type can be applied or converted
-            // FIXME: to the host parameter types to decide which method is "best."
+            _scratch.Clear();
+
             var list = _methods[methodName];
             for (int i = 0; i < list.Count; ++i)
             {
                 var method = list[i];
-                if (method.Parameters.Length == totalParams)
+                var parameters = method.Parameters;
+
+                if (!method.IsVarArgs)
                 {
-                    return method;
+                    var required = parameters.Length - method.OptionalParameters;
+                    if (totalParams >= required && totalParams <= parameters.Length)
+                    {
+                        _scratch.Add(method);
+                    }
+                }
+                else
+                {
+                    var paramCount = method.VarArgIndex;
+                    var required = paramCount - method.OptionalParameters;
+                    if (totalParams >= required)
+                    {
+                        _scratch.Add(method);
+                    }
                 }
             }
 
-            return null;
+            return _scratch;
         }
 
         /// <summary>

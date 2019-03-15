@@ -65,12 +65,20 @@ namespace Enklu.Orchid.Chakra.Interop
             });
         }
 
+        /// <summary>
+        /// Returns the Chakra <see cref="JavaScriptValue"/> for the property name.
+        /// </summary>
         public JavaScriptValue GetValue(string name)
         {
-            return _scope.Run(() =>
-            {
-                return _value.GetProperty(JavaScriptPropertyId.FromString(name));
-            });
+            return _scope.Run(() => _value.GetProperty(JavaScriptPropertyId.FromString(name)));
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if the current object has a value using the specific property.
+        /// </summary>
+        public bool HasValue(string name)
+        {
+            return _scope.Run(() => _value.HasProperty(JavaScriptPropertyId.FromString(name)));
         }
 
         /// <summary>

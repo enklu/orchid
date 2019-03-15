@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Enklu.Orchid.Logging;
 
 namespace Enklu.Orchid.Chakra.Interop
 {
@@ -40,8 +41,9 @@ namespace Enklu.Orchid.Chakra.Interop
         {
             return _scope.Run(() =>
             {
-                var jsValue = JavaScriptValue.CreateFunction(func);
-                Link(jsValue, func);
+                var jsFunc = JsSafeDecorator.Decorate(func);
+                var jsValue = JavaScriptValue.CreateFunction(jsFunc);
+                Link(jsValue, jsFunc);
 
                 return jsValue;
             });
@@ -108,6 +110,11 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <returns>The JS object reference bound to the host object if it exists. Otherwise, <see cref="JavaScriptValue.Invalid"/></returns>
         public JavaScriptValue JsObjectLinkedTo(object obj)
         {
+            if (null == obj)
+            {
+                return JavaScriptValue.Invalid;
+            }
+
             if (_objects.TryGet(obj, out var jsValue))
             {
                 return jsValue;

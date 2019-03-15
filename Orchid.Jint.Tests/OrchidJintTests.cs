@@ -579,5 +579,63 @@ namespace Enklu.Orchid.Jint.Tests
             });
         }
         */
+
+        public class CallCount
+        {
+            public int CallCounter { get; set; } = 0;
+
+            public void doThing()
+            {
+                Console.WriteLine("doThing()");
+                CallCounter++;
+            }
+        }
+
+        [Test]
+        public void ModuleTest()
+        {
+            RunTest(context =>
+            {
+                var script = @"
+                    const self = this;
+
+                    function enter() {
+                        console.log('enter()');
+                        self.doThing();
+                    }
+
+                    function update() {
+                        console.log('update()');
+                    }
+
+                    function exit()
+                    {
+                        console.log('exit');
+                    }
+
+                    function msgMissing()
+                    {
+                        console.log('msgMissing');
+                    }
+
+                    if (typeof module !== 'undefined')
+                    {
+                        module.exports = {
+                            enter: enter,
+                            update: update,
+                            exit: exit,
+                            msgMissing: msgMissing
+                        };
+                    }";
+
+                var cc = new CallCount();
+                var module = context.NewModule("module_1234");
+
+                context.RunScript(cc, script, module);
+
+                var fn = module.GetExportedValue<IJsCallback>("enter");
+                fn.Invoke();
+            });
+        }
     }
 }

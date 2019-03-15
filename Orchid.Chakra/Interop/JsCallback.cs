@@ -19,6 +19,7 @@ namespace Enklu.Orchid.Chakra.Interop
             _scope = scope;
             _interop = interop;
             _callback = callback;
+            _callback.AddRef();
         }
 
         /// <inheritdoc />
@@ -75,8 +76,13 @@ namespace Enklu.Orchid.Chakra.Interop
             }
             catch (Exception e)
             {
-                JavaScriptContext.SetException(JavaScriptValue.CreateError(JavaScriptValue.FromString(e.Message)));
-                return null;
+                if (e is JavaScriptScriptException)
+                {
+                    var jse = (JavaScriptScriptException)e;
+                    throw new Exception(jse.Error.GetProperty(JavaScriptPropertyId.FromString("message")).ToString());
+                }
+
+                throw e;
             }
         }
     }

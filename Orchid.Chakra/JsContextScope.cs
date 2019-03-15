@@ -1,4 +1,5 @@
 ﻿using System;
+using Enklu.Orchid.Logging;
 
 namespace Enklu.Orchid.Chakra
 {
@@ -25,6 +26,11 @@ namespace Enklu.Orchid.Chakra
         private JavaScriptContext _context;
 
         /// <summary>
+        /// The value of the context prior to executing under the new context.
+        /// </summary>
+        private JavaScriptContext _previousContext;
+
+        /// <summary>
         /// The current reentrancy state
         /// </summary>
         private int _contextsHeld = 0;
@@ -48,6 +54,16 @@ namespace Enklu.Orchid.Chakra
         /// </summary>
         public void Enter()
         {
+            if (!IsCurrentContext)
+            {
+                _previousContext = JavaScriptContext.Current;
+                JavaScriptContext.Current = _context;
+            }
+
+            _contextsHeld++;
+
+
+            /*
             var isCurrent = IsCurrentContext;
             var isContext = JavaScriptContext.Current != Invalid;
             if (isContext && !isCurrent)
@@ -60,6 +76,7 @@ namespace Enklu.Orchid.Chakra
             {
                 JavaScriptContext.Current = _context;
             }
+            */
         }
 
         /// <summary>
@@ -69,12 +86,14 @@ namespace Enklu.Orchid.Chakra
         {
             if (!IsCurrentContext)
             {
+                Log.Error(this, "Context Scope tried to exit while not being current");
                 return;
             }
 
             if (--_contextsHeld == 0)
             {
-                JavaScriptContext.Current = Invalid;
+                JavaScriptContext.Current = _previousContext;
+                _previousContext = Invalid;
             }
         }
 

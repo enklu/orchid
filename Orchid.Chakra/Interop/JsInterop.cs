@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -27,6 +28,12 @@ namespace Enklu.Orchid.Chakra.Interop
         /// The <see cref="JavaScriptValue.CallFunction"/> method info for converting parameter expressions.
         /// </summary>
         private static MethodInfo JsValueCallFunctionInfo = typeof(JavaScriptValue).GetMethod("CallFunction");
+
+        /// <summary>
+        /// The method info for extracting meaningful exception messages from bubbling JS or host exceptions.
+        /// </summary>
+        private static MethodInfo JsExtractErrorInfo = typeof(JsErrorHelper)
+            .GetMethod("ExtractErrorMessage", BindingFlags.Static | BindingFlags.Public);
 
         /// <summary>
         /// The <see cref="JavaScriptValue.Release"/> method info for releasing a reference to a JS function after it's
@@ -109,80 +116,6 @@ namespace Enklu.Orchid.Chakra.Interop
         }
 
         /// <summary>
-        /// Attempts to infer the host type based on the javscript type.
-        /// </summary>
-        public bool TryInferType(JavaScriptValue arg, out Type type)
-        {
-            type = null;
-            switch (arg.ValueType)
-            {
-                case JavaScriptValueType.Undefined: return true;
-                case JavaScriptValueType.Null: return true;
-                case JavaScriptValueType.Array:
-                {
-                    type = typeof(object[]);
-                    return true;
-                }
-                case JavaScriptValueType.TypedArray:
-                {
-                    var length = arg.GetProperty(JavaScriptPropertyId.FromString("length")).ToInt32();
-                    if (length <= 0)
-                    {
-                        type = typeof(object[]);
-                        return true;
-                    }
-
-                    Type innerType;
-                    var firstElement = arg.GetIndexedProperty(JavaScriptValue.FromInt32(0));
-                    if (TryInferType(firstElement, out innerType))
-                    {
-                        type = innerType.MakeArrayType();
-                        return true;
-                    }
-
-                    type = typeof(object[]);
-                    return true;
-                }
-                case JavaScriptValueType.Boolean:
-                {
-                    type = typeof(bool);
-                    return true;
-                }
-                case JavaScriptValueType.Number:
-                {
-                    type = typeof(double);
-                    return true;
-                }
-                case JavaScriptValueType.String:
-                {
-                    type = typeof(string);
-                    return true;
-                }
-                case JavaScriptValueType.Function:
-                {
-                    type = typeof(IJsCallback);
-                    return true;
-                }
-                case JavaScriptValueType.Object:
-                {
-                    try
-                    {
-                        var hostObject = ToHostBoundObject(arg, typeof(void));
-                        type = hostObject.GetType();
-                        return true;
-                    }
-                    catch
-                    {
-                        type = typeof(object);
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// Converts a <see cref="JavaScriptValue"/> object into a host object.
         /// </summary>
         public object ToHostBoundObject(JavaScriptValue arg, Type toType)
@@ -236,43 +169,68 @@ namespace Enklu.Orchid.Chakra.Interop
         /// </summary>
         public object ToHostNumber(JavaScriptValue arg, Type toType)
         {
+            // 32-bit Conversions
             if (toType == typeof(byte))
             {
-                return (byte)arg.ToInt32();
+                return (byte) arg.ToInt32();
             }
-
+            if (toType == typeof(sbyte))
+            {
+                return (sbyte) arg.ToInt32();
+            }
             if (toType == typeof(short))
             {
-                return (short)arg.ToInt32();
+                return (short) arg.ToInt32();
+            }
+            if (toType == typeof(ushort))
+            {
+                return (ushort) arg.ToInt32();
             }
             if (toType == typeof(int))
             {
                 return arg.ToInt32();
             }
-
-            if (toType == typeof(float))
+            if (toType == typeof(uint))
             {
-                return (float)arg.ToDouble();
+                return (uint) arg.ToInt32();
             }
 
+            // 64-bit Conversions
+            if (toType == typeof(long))
+            {
+                return (long)arg.ToDouble();
+            }
+            if (toType == typeof(ulong))
+            {
+                return (ulong)arg.ToDouble();
+            }
+            if (toType == typeof(float))
+            {
+                return (float) arg.ToDouble();
+            }
             if (toType == typeof(double))
             {
                 return arg.ToDouble();
             }
-
             if (toType == typeof(decimal))
             {
                 return (decimal)arg.ToDouble();
             }
 
+            // Other Conversions
             if (toType == typeof(string))
             {
                 return arg.ConvertToString().ToString();
             }
-
             if (toType == typeof(bool))
             {
                 return arg.ConvertToBoolean().ToBoolean();
+            }
+
+            // Last Attempt
+            if (toType.IsAssignableFrom(typeof(double)))
+            {
+                return arg.ToDouble();
             }
 
             throw new Exception($"Cannot convert javascript number to type: {toType}");
@@ -419,7 +377,7 @@ namespace Enklu.Orchid.Chakra.Interop
 
             // Setup Exception.Message extraction
             var exceptionParam = Expression.Parameter(typeof(Exception), "e");
-            var messageProp = Expression.Property(exceptionParam, "Message");
+            var messageProp = Expression.Call(JsExtractErrorInfo, exceptionParam);
 
             // JavaScriptContext.SetException(JavaScriptValue.FromString(e.Message));
             var message = Expression.Call(JsValueFromString, messageProp);
@@ -427,8 +385,7 @@ namespace Enklu.Orchid.Chakra.Interop
             var setJsException = Expression.Call(JsContextSetException, fromString);
 
             var assignAndBody = Expression.Block(new[] { jsReturn },
-                Expression.TryCatchFinally(callAndConvert,
-                    Expression.Call(jsFunc, JsValueReleaseInfo),
+                Expression.TryCatch(callAndConvert,
                     ExpressionHelper.CatchBlock(exceptionParam, setJsException, returnType)));
 
             var hostFn = Expression.Lambda(toType, assignAndBody, parameterExpressions).Compile();
@@ -494,27 +451,27 @@ namespace Enklu.Orchid.Chakra.Interop
         /// </summary>
         public JavaScriptValue ToJsObject(object obj, Type type)
         {
-            if (IsVoidType(type))
+            if (JsConversions.IsVoidType(type))
             {
                 return ToJsVoid(obj, type);
             }
 
-            if (IsNumberType(type))
+            if (JsConversions.IsNumberType(type))
             {
                 return ToJsNumber(obj, type);
             }
 
-            if (IsStringType(type))
+            if (JsConversions.IsStringType(type))
             {
                 return ToJsString(obj, type);
             }
 
-            if (IsBooleanType(type))
+            if (JsConversions.IsBoolType(type))
             {
                 return ToJsBoolean(obj, type);
             }
 
-            if (IsFunctionType(type))
+            if (JsConversions.IsFunctionType(type))
             {
                 return ToJsFunction(obj, type);
             }
@@ -553,7 +510,7 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <remarks>This call requires an active context.</remarks>
         public JavaScriptValue ToJsString(object obj, Type type)
         {
-            return JavaScriptValue.FromString((string)obj);
+            return JavaScriptValue.FromString(obj.ToString());
         }
 
         /// <summary>
@@ -576,12 +533,21 @@ namespace Enklu.Orchid.Chakra.Interop
                 return JavaScriptValue.FromInt32((byte)obj);
             }
 
+            if (type == typeof(sbyte))
+            {
+                return JavaScriptValue.FromInt32((sbyte) obj);
+            }
+
             if (type == typeof(short))
             {
                 return JavaScriptValue.FromInt32((short)obj);
             }
+            if (type == typeof(ushort))
+            {
+                return JavaScriptValue.FromInt32((ushort)obj);
+            }
 
-            if (type == typeof(int))
+            if (type == typeof(int) || type == typeof(uint))
             {
                 return JavaScriptValue.FromInt32((int)obj);
             }
@@ -604,6 +570,11 @@ namespace Enklu.Orchid.Chakra.Interop
             if (type == typeof(long))
             {
                 return JavaScriptValue.FromDouble((long)obj);
+            }
+
+            if (type == typeof(ulong))
+            {
+                return JavaScriptValue.FromDouble((ulong)obj);
             }
 
             throw new Exception($"Cannot convert type: {type} into JS Number");
@@ -641,15 +612,7 @@ namespace Enklu.Orchid.Chakra.Interop
                     return JavaScriptValue.Invalid;
                 }
 
-                if (null != result)
-                {
-                    var valueType = result.GetType();
-                    resultType = valueType.IsAssignableFrom(resultType)
-                        ? resultType
-                        : valueType;
-                }
-
-                return ToJsObject(result, resultType);
+                return ToJsObject(result, JsConversions.TypeFor(result, resultType));
             };
 
             return _binder.BindFunction(func);
@@ -677,45 +640,81 @@ namespace Enklu.Orchid.Chakra.Interop
         }
 
         /// <summary>
+        /// Attempts to infer the host type based on the javscript type.
+        /// </summary>
+        public bool TryInferType(JavaScriptValue arg, out Type type)
+        {
+            // TODO: This method should be used as a last line of effort to try and build a host
+            // TODO: type of method call from JS objects. Would love to get rid of it altogether.
+            type = null;
+            switch (arg.ValueType)
+            {
+                case JavaScriptValueType.Undefined: return true;
+                case JavaScriptValueType.Null: return true;
+                case JavaScriptValueType.Array:
+                case JavaScriptValueType.TypedArray:
+                {
+                    var length = arg.GetProperty(JavaScriptPropertyId.FromString("length")).ToInt32();
+                    if (length <= 0)
+                    {
+                        type = typeof(object[]);
+                        return true;
+                    }
+
+                    Type innerType;
+                    var firstElement = arg.GetIndexedProperty(JavaScriptValue.FromInt32(0));
+                    if (TryInferType(firstElement, out innerType))
+                    {
+                        type = innerType.MakeArrayType();
+                        return true;
+                    }
+
+                    type = typeof(object[]);
+                    return true;
+                }
+                case JavaScriptValueType.Boolean:
+                {
+                    type = typeof(bool);
+                    return true;
+                }
+                case JavaScriptValueType.Number:
+                {
+                    type = typeof(double);
+                    return true;
+                }
+                case JavaScriptValueType.String:
+                {
+                    type = typeof(string);
+                    return true;
+                }
+                case JavaScriptValueType.Function:
+                {
+                    type = typeof(IJsCallback);
+                    return true;
+                }
+                case JavaScriptValueType.Object:
+                {
+                    try
+                    {
+                        var hostObject = ToHostBoundObject(arg, typeof(void));
+                        type = hostObject.GetType();
+                        return true;
+                    }
+                    catch
+                    {
+                        type = typeof(object);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// New JS Binding Builder
         /// </summary>
         private JsBindingBuilder NewBuilder() => new JsBindingBuilder(_scope, _binder, this);
-
-        /// <summary>
-        /// Determines if the host type is void.
-        /// </summary>
-        private static bool IsVoidType(Type type) => type == typeof(void);
-
-        /// <summary>
-        /// Determines if the host type is bool.
-        /// </summary>
-        private static bool IsBooleanType(Type type) => type == typeof(bool);
-
-        /// <summary>
-        /// Determines if the host type is string.
-        /// </summary>
-        private static bool IsStringType(Type type) => type == typeof(string);
-
-        /// <summary>
-        /// Determines whether the host type is a function.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        private static bool IsFunctionType(Type type) => typeof(MulticastDelegate).IsAssignableFrom(type);
-
-        /// <summary>
-        /// Returns <c>true</c> if the <see cref="Type"/> is convertible to a javascript Number.
-        /// </summary>
-        private static bool IsNumberType(Type type)
-        {
-            return type == typeof(byte)
-                || type == typeof(short)
-                || type == typeof(int)
-                || type == typeof(decimal)
-                || type == typeof(float)
-                || type == typeof(double)
-                || type == typeof(long);
-        }
 
     }
 }
