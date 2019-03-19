@@ -12,16 +12,16 @@ namespace Enklu.Orchid.Jint
     public class JsCallbackConversion : ICallableConversion
     {
         /// <summary>
-        /// Jint engine.
+        /// Jint executionContext.
         /// </summary>
-        private readonly Engine _engine;
+        private readonly JsExecutionContext _executionContext;
 
         /// <summary>
         /// Creates a new <see cref="JsCallbackConversion"/> instance.
         /// </summary>
-        public JsCallbackConversion(Engine engine)
+        public JsCallbackConversion(JsExecutionContext executionContext)
         {
-            _engine = engine;
+            _executionContext = executionContext;
         }
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace Enklu.Orchid.Jint
         /// </summary>
         public object Convert(Func<JsValue, JsValue[], JsValue> callable)
         {
-            return new JsCallback(_engine, callable);
+            return new JsCallback(_executionContext, callable);
         }
     }
 }

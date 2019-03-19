@@ -42,6 +42,11 @@ namespace Enklu.Orchid.Chakra
         public JsContextScope Scope => _scope;
 
         /// <summary>
+        /// This delegate is invoked just before the current context is disposed of.
+        /// </summary>
+        public Action<IJsExecutionContext> OnExecutionContextDisposing { get; set; }
+
+        /// <summary>
         /// Creates a new <see cref="JsExecutionContext"/> instance.
         /// </summary>
         public JsExecutionContext(JavaScriptRuntime runtime)
@@ -49,7 +54,7 @@ namespace Enklu.Orchid.Chakra
             _runtime = runtime;
             _scope = new JsContextScope(_runtime.CreateContext());
             _binder = new JsBinder(_scope);
-            _interop = new JsInterop(_scope, _binder);
+            _interop = new JsInterop(this, _scope, _binder);
 
             _scope.Run(() =>
             {
@@ -188,6 +193,11 @@ namespace Enklu.Orchid.Chakra
         /// <inheritdoc />
         public void Dispose()
         {
+            if (null != OnExecutionContextDisposing)
+            {
+                OnExecutionContextDisposing.Invoke(this);
+            }
+
             _scope.Dispose();
         }
     }

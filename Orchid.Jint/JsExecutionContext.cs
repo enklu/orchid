@@ -5,12 +5,25 @@ using Jint.Native;
 
 namespace Enklu.Orchid.Jint
 {
-    public class JsExecutionContext : IJsExecutionContext
+    /// <summary>
+    /// Jint implementation of <see cref="IJsExecutionContext"/>.
+    /// </summary>
+    public class JsExecutionContext : IJsExecutionContext, IDisposable
     {
         /// <summary>
         /// Internal Jint execution context
         /// </summary>
-        private readonly Engine _engine;
+        private Engine _engine;
+
+        /// <summary>
+        /// The Jint Engine instance for this execution context.
+        /// </summary>
+        public Engine Engine => _engine;
+
+        /// <summary>
+        /// This delegate is invoked just before the current context is disposed of.
+        /// </summary>
+        public Action<IJsExecutionContext> OnExecutionContextDisposing { get; set; }
 
         /// <summary>
         /// Creates a new <see cref="JsExecutionContext"/> instance.
@@ -20,17 +33,20 @@ namespace Enklu.Orchid.Jint
             _engine = engine;
         }
 
+        /// <inheritdoc />
         public IJsModule NewModule(string moduleId)
         {
             return new JsModule(_engine, moduleId);
         }
 
+        /// <inheritdoc />
         public T GetValue<T>(string name)
         {
             var value = _engine.GetValue(name);
             return value.To<T>(_engine.ClrTypeConverter);
         }
 
+        /// <inheritdoc />
         public void SetValue<T>(string name, T value)
         {
             // Ensure that we're getting type information from the
@@ -68,11 +84,13 @@ namespace Enklu.Orchid.Jint
             _engine.SetValue(name, objValue);
         }
 
+        /// <inheritdoc />
         public void RunScript(string script)
         {
             _engine.Execute(script);
         }
 
+        /// <inheritdoc />
         public void RunScript(object @this, string script)
         {
             var jsThis = JsValue.FromObject(_engine, @this);
@@ -82,6 +100,7 @@ namespace Enklu.Orchid.Jint
             _engine.Invoke(fn, jsThis, new object[] { });
         }
 
+        /// <inheritdoc />
         public void RunScript(object @this, string script, IJsModule module)
         {
             var jsThis = JsValue.FromObject(_engine, @this);
@@ -89,6 +108,22 @@ namespace Enklu.Orchid.Jint
 
             var fn = _engine.Execute(jsScript).GetCompletionValue();
             _engine.Invoke(fn, jsThis, new object[] { ((JsModule) module).Module });
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (null != OnExecutionContextDisposing)
+            {
+                OnExecutionContextDisposing.Invoke(this);
+            }
+
+            if (null != _engine)
+            {
+                _engine.Destroy();
+            }
+
+            _engine = null;
         }
     }
 }

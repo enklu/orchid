@@ -7,15 +7,20 @@ namespace Enklu.Orchid.Chakra.Interop
     /// </summary>
     public class JsCallback : IJsCallback
     {
+        private readonly JsExecutionContext _context;
         private readonly JsContextScope _scope;
         private readonly JsInterop _interop;
         private readonly JavaScriptValue _callback;
 
+        /// <inheritDoc />
+        public IJsExecutionContext ExecutionContext => _context;
+
         /// <summary>
         /// Creates a new <see cref="JsCallback"/> instance.
         /// </summary>
-        public JsCallback(JsContextScope scope, JsInterop interop, JavaScriptValue callback)
+        public JsCallback(JsExecutionContext context, JsContextScope scope, JsInterop interop, JavaScriptValue callback)
         {
+            _context = context;
             _scope = scope;
             _interop = interop;
             _callback = callback;

@@ -13,31 +13,34 @@ namespace Enklu.Orchid.Jint
         /// <summary>
         /// Jint Engine parameter for creating conversions
         /// </summary>
-        private readonly Engine _engine;
+        private readonly JsExecutionContext _context;
 
         /// <summary>
         /// Jint ICallable function to execute when applying this callback.
         /// </summary>
         private readonly Func<JsValue, JsValue[], JsValue> _callback;
 
+        /// <inheritDoc />
+        public IJsExecutionContext ExecutionContext => _context;
+
         /// <summary>
         /// Creates a new <see cref="JsCallback"/> instance.
         /// </summary>
-        public JsCallback(Engine engine, Func<JsValue, JsValue[], JsValue> callback)
+        public JsCallback(JsExecutionContext context, Func<JsValue, JsValue[], JsValue> callback)
         {
-            _engine = engine;
+            _context = context;
             _callback = callback;
         }
 
         /// <inheritDoc />
         public object Apply(object @this, params object[] args)
         {
-            var jsThis = JsValue.FromObject(_engine, @this);
+            var jsThis = JsValue.FromObject(_context.Engine, @this);
             var jsArgs = new JsValue[args.Length];
 
             for (int i = 0; i < args.Length; ++i)
             {
-                jsArgs[i] = JsValue.FromObject(_engine, args[i]);
+                jsArgs[i] = JsValue.FromObject(_context.Engine, args[i]);
             }
 
             var result = _callback(jsThis, jsArgs);
@@ -52,7 +55,7 @@ namespace Enklu.Orchid.Jint
 
             for (int i = 0; i < args.Length; ++i)
             {
-                jsArgs[i] = JsValue.FromObject(_engine, args[i]);
+                jsArgs[i] = JsValue.FromObject(_context.Engine, args[i]);
             }
 
             var result = _callback(jsThis, jsArgs);

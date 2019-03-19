@@ -48,12 +48,13 @@ namespace Enklu.Orchid.Jint
         public IJsExecutionContext NewExecutionContext()
         {
             var engine = new Engine(_configure);
+            var executionContext = new JsExecutionContext(engine);
 
             engine.ClrTypeConverter.RegisterDelegateConversion(
                 typeof(IJsCallback),
-                new JsCallbackConversion(engine));
+                new JsCallbackConversion(executionContext));
 
-            return new JsExecutionContext(engine);
+            return executionContext;
         }
 
         /// <inheritdoc />

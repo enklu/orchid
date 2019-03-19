@@ -922,6 +922,35 @@ namespace Enklu.Orchid.Chakra.Tests
             });
         }
 
+        [Test]
+        public void DisposeEventTest()
+        {
+            RunTest(context =>
+            {
+                bool flag = false;
+
+                Action<IJsCallback> receiveCallback = cb =>
+                {
+                    cb.ExecutionContext.OnExecutionContextDisposing += ctx => flag = true;
+                };
+
+                context.SetValue("makeCallback", receiveCallback);
+                context.SetValue("ele", new ArrayContainer());
+                context.RunScript(@"
+                    var elements = ele.Elements;
+
+                    for (var i in elements) {
+                        console.log(elements[i].Name);
+                    }
+
+                    makeCallback(function() { });
+                ");
+
+                context.Dispose();
+                Assert.IsTrue(flag);
+            });
+        }
+
         public class FooObj
         {
             public string Name { get; set; }
@@ -1287,5 +1316,6 @@ enter.apply(thisBinding);
 ");
             runtime.Dispose();
         }
+
     }
 }

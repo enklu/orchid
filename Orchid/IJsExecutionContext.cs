@@ -1,4 +1,6 @@
-﻿namespace Enklu.Orchid
+﻿using System;
+
+namespace Enklu.Orchid
 {
     /// <summary>
     /// Abstraction of a JavaScript Execution Context, which contains a global object and interop caches
@@ -8,6 +10,11 @@
     /// </summary>
     public interface IJsExecutionContext
     {
+        /// <summary>
+        /// This delegate is invoked just before the current context is disposed of.
+        /// </summary>
+        Action<IJsExecutionContext> OnExecutionContextDisposing { get; set; }
+
         /// <summary>
         /// Creates a new <see cref="IJsModule"/> implementation which can be passed to <see cref="RunScript(string)"/>
         /// </summary>

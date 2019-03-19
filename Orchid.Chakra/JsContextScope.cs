@@ -126,7 +126,6 @@ namespace Enklu.Orchid.Chakra
         {
             if (!IsCurrentContext)
             {
-                Log.Error(this, "Context Scope tried to exit while not being current");
                 return;
             }
 

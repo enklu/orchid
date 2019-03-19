@@ -62,6 +62,11 @@ namespace Enklu.Orchid.Chakra.Interop
         private static Expression JsValueUndefinedExpression = Expression.Constant(JavaScriptValue.Undefined, typeof(JavaScriptValue));
 
         /// <summary>
+        /// The execution context the interop scope is part of.
+        /// </summary>
+        private readonly JsExecutionContext _context;
+
+        /// <summary>
         /// The javascript context to use for conversions.
         /// </summary>
         private readonly JsContextScope _scope;
@@ -85,8 +90,9 @@ namespace Enklu.Orchid.Chakra.Interop
         /// Creates a new <see cref="JsInterop"/> instance.
         /// </summary>
         /// <param name="scope"></param>
-        public JsInterop(JsContextScope scope, JsBinder binder)
+        public JsInterop(JsExecutionContext context, JsContextScope scope, JsBinder binder)
         {
+            _context = context;
             _scope = scope;
             _binder = binder;
         }
@@ -442,7 +448,7 @@ namespace Enklu.Orchid.Chakra.Interop
                 return _callbackCache[arg.Reference];
             }
 
-            var jsCallback = new JsCallback(_scope, this, arg);
+            var jsCallback = new JsCallback(_context, _scope, this, arg);
             _callbackCache[arg.Reference] = jsCallback;
             return jsCallback;
         }

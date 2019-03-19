@@ -7,6 +7,11 @@
     public interface IJsCallback
     {
         /// <summary>
+        /// This property contains the <see cref="IJsExecutionContext"/> the callback was created in.
+        /// </summary>
+        IJsExecutionContext ExecutionContext { get; }
+
+        /// <summary>
         /// This method invokes the javascript callback with the provided arguments. Invocation works identically
         /// to a function call in javascript. That is, you may pass fewer or more arguments than the function length.
         /// </summary>
