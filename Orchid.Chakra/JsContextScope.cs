@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Enklu.Orchid.Logging;
 
 namespace Enklu.Orchid.Chakra
@@ -36,6 +37,12 @@ namespace Enklu.Orchid.Chakra
         private int _contextsHeld = 0;
 
         /// <summary>
+        /// Queue which C# finalizer threads can add JavaScript values for release, to be
+        /// executed on the next context entry.
+        /// </summary>
+        private Queue<JavaScriptValue> _releaseQueue = new Queue<JavaScriptValue>();
+
+        /// <summary>
         /// Whether or not this context is the runtime's current.
         /// </summary>
         public bool IsCurrentContext => JavaScriptContext.Current == _context;
@@ -47,6 +54,37 @@ namespace Enklu.Orchid.Chakra
         {
             _context = context;
             _context.AddRef();
+        }
+
+        /// <summary>
+        /// A thread safe way to queue the release of JavaScript values release if tied to the
+        /// finalizer of a C# object.
+        /// </summary>
+        /// <param name="jsValue"></param>
+        public void QueueRelease(JavaScriptValue jsValue)
+        {
+            lock (_releaseQueue)
+            {
+                _releaseQueue.Enqueue(jsValue);
+            }
+        }
+
+        /// <summary>
+        /// Releases all of the javascript values in the release queue.
+        /// </summary>
+        private void DrainQueue()
+        {
+            lock (_releaseQueue)
+            {
+                while (_releaseQueue.Count > 0)
+                {
+                    var jsValue = _releaseQueue.Dequeue();
+                    if (jsValue.IsValid)
+                    {
+                        jsValue.Release();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -62,6 +100,8 @@ namespace Enklu.Orchid.Chakra
 
             _contextsHeld++;
 
+            // Drain the JsValue.Release() Queue
+            DrainQueue();
 
             /*
             var isCurrent = IsCurrentContext;

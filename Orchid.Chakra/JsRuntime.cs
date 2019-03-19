@@ -19,7 +19,9 @@ namespace Enklu.Orchid.Chakra
         /// </summary>
         public JsRuntime()
         {
-            _runtime = JavaScriptRuntime.Create();
+            _runtime = JavaScriptRuntime.Create(
+                JavaScriptRuntimeAttributes.EnableIdleProcessing,
+                JavaScriptRuntimeVersion.Version11);
         }
 
         /// <inheritdoc />

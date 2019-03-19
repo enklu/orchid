@@ -123,10 +123,45 @@ namespace Enklu.Orchid.Chakra.Interop
             var boundObject = _binder.ObjectLinkedTo(arg);
             if (null == boundObject)
             {
-                throw new Exception("Could not find host bound object for javascript value. Any JS Object types passed to the host must be created on the host");
+                // Object was constructed in JS and has no host object mapping, so we create one
+                boundObject = NewHostObject(arg);
             }
 
             return boundObject;
+        }
+
+        /// <summary>
+        /// For object constructed in JS, we need to create a C# representation and bind it to that
+        /// object. For this, we'll use a <see cref="Dictionary{TKey,TValue}"/>. Possibly a later addition
+        /// could use a custom serialization process and allow the user to control.
+        /// </summary>
+        private Dictionary<string, object> NewHostObject(JavaScriptValue arg)
+        {
+            // Create new Dictionary mapping to hold the properties, Create a new bindable JS object to replace
+            // the existing one. Note: This could cause issues if these objects are used as keys.
+            var d = new Dictionary<string, object>();
+            var replacement = _binder.BindObject(d);
+
+            var propNames = (string[]) ToHostArray(arg.GetOwnPropertyNames(), typeof(string[]));
+            for (var i = 0; i < propNames.Length; ++i)
+            {
+                var propName = propNames[i];
+                var propId = JavaScriptPropertyId.FromString(propName);
+                var jsProp = arg.GetProperty(propId);
+
+                // Copy Properties into Replacement
+                replacement.SetProperty(propId, jsProp, true);
+
+                Type propType;
+                if (!TryInferType(jsProp, out propType))
+                {
+                    throw new Exception($"Failed to create Host representation of JS object. Property: {propName}");
+                }
+
+                d[propName] = ToHostObject(jsProp, propType);
+            }
+
+            return d;
         }
 
         /// <summary>
@@ -451,6 +486,11 @@ namespace Enklu.Orchid.Chakra.Interop
         /// </summary>
         public JavaScriptValue ToJsObject(object obj, Type type)
         {
+            if (null == obj)
+            {
+                return JavaScriptValue.Null;
+            }
+
             if (JsConversions.IsVoidType(type))
             {
                 return ToJsVoid(obj, type);

@@ -13,6 +13,7 @@ namespace Enklu.Orchid.Chakra.Interop
         private readonly Dictionary<string, List<HostMethod>> _methods = new Dictionary<string, List<HostMethod>>();
         private readonly Dictionary<string, HostProperty> _properties = new Dictionary<string, HostProperty>();
         private readonly Dictionary<string, HostField> _fields = new Dictionary<string, HostField>();
+        private readonly Dictionary<string, HostMethod> _methodInvocations = new Dictionary<string, HostMethod>();
 
         private List<string> _methodNames;
         private List<string> _propertyNames;
@@ -176,5 +177,11 @@ namespace Enklu.Orchid.Chakra.Interop
 
             return _fields[fieldName];
         }
+
+        /// <inheritdoc/>
+        public void CacheInvocation(string invokeKey, HostMethod method) => _methodInvocations[invokeKey] = method;
+
+        /// <inheritdoc/>
+        public bool TryGetInvocation(string invokeKey, out HostMethod method) => _methodInvocations.TryGetValue(invokeKey, out method);
     }
 }

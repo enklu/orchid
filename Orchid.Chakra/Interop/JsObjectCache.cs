@@ -1,4 +1,6 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Enklu.Orchid.Chakra.Interop
 {
@@ -12,13 +14,53 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <summary>
         /// Reference type container for <see cref="JavaScriptValue"/>.
         /// </summary>
-        private class JsValueHolder
+        private class JsValueHolder : SafeHandle
         {
+            /// <summary>
+            /// The context scope this value exists within.
+            /// </summary>
+            private readonly JsContextScope _scope;
+
+            /// <summary>
+            /// JS Value
+            /// </summary>
+            private JavaScriptValue _value;
+
             /// <summary>
             /// The javascript value entry.
             /// </summary>
-            public JavaScriptValue Value { get; set; }
+            public JavaScriptValue Value => _value;
+
+            /// <summary>
+            /// Creates a new safe handle for the JS Value.
+            /// </summary>
+            public JsValueHolder(JavaScriptValue value, JsContextScope scope)
+                : base(value.Reference, true)
+            {
+                _value = value;
+                _value.AddRef();
+            }
+
+            /// <inheritdoc/>
+            protected override bool ReleaseHandle()
+            {
+                // When C# object is GC'd, we'll release the JS reference
+                if (_value.IsValid)
+                {
+                    _scope.QueueRelease(_value);
+                }
+
+                return true;
+            }
+
+            /// <inheritdoc/>
+            public override bool IsInvalid => !_value.IsValid;
         }
+
+        /// <summary>
+        /// Context scope the objects added are part of.
+        /// </summary>
+        private readonly JsContextScope _scope;
 
         /// <summary>
         /// We use a <see cref="ConditionalWeakTable{TKey,TValue}"/> here due to it's ability to
@@ -30,8 +72,9 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <summary>
         /// Creates a new <see cref="JsObjectCache"/> instance.
         /// </summary>
-        public JsObjectCache()
+        public JsObjectCache(JsContextScope scope)
         {
+            _scope = scope;
             _objects = new ConditionalWeakTable<object, JsValueHolder>();
         }
 
@@ -55,7 +98,7 @@ namespace Enklu.Orchid.Chakra.Interop
         /// </summary>
         public void Add(object obj, JavaScriptValue jsValue)
         {
-            _objects.Add(obj, new JsValueHolder {Value = jsValue});
+            _objects.Add(obj, new JsValueHolder(jsValue, _scope));
         }
 
         /// <summary>

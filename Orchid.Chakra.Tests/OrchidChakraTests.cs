@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
+using System.Timers;
 using Enklu.Orchid.Chakra;
 using Enklu.Orchid.Chakra.Interop;
 using Enklu.Orchid.Logging;
@@ -1029,6 +1031,261 @@ namespace Enklu.Orchid.Chakra.Tests
                     d.dispatch('my-evt');
                 ");
             });
+        }
+
+        public class NullElement
+        {
+            public NullElement()
+            {
+
+            }
+        }
+
+        public class NullReturner
+        {
+            public NullElement GetProperty(string s)
+            {
+                return null;
+            }
+        }
+
+        [Test]
+        public void TestNullCarryThrough()
+        {
+            RunTest(context =>
+            {
+                context.SetValue("thing", new NullReturner());
+                context.RunScript(@"
+                    var aThing = thing.GetProperty('foo');
+                    assert(!aThing);
+                ");
+            });
+        }
+
+        [Test]
+        public void DynamicObjTest()
+        {
+            RunTest(context =>
+            {
+                context.SetValue("foo", new FooObj {Name="TestFoo"});
+                context.RunScript(@"
+                    function output(someObj) {
+                        for (var k in someObj) {
+                            console.log('key: ' + k + ' = ' + someObj[k]);
+                        }
+                    }
+                ");
+
+                var callback = context.GetValue<IJsCallback>("output");
+                context.SetValue("receiver", new Action<object>(o =>
+                {
+                    Console.WriteLine("Receiver");
+
+                    var d = (Dictionary<string, object>) o;
+                    foreach (var key in d.Keys)
+                    {
+                        Console.WriteLine($"Key: {key}, Value: {d[key]}");
+                    }
+
+                    callback.Invoke(o);
+                }));
+
+                context.RunScript(@"
+                    receiver({
+                        prop1: 'test 1 2 3',
+                        prop2: 24,
+                        prop3: true,
+                        prop4: foo
+                    });
+                ");
+            });
+        }
+
+        public class InvokeCacheObj
+        {
+            public FooObj Foo { get; set; } = new FooObj();
+            public InvokeCacheObj()
+            {
+
+            }
+
+            public void DoIt(string a, int b)
+            {
+                Console.WriteLine("DoIt #1");
+            }
+
+            public void DoIt(string a, int b, float c)
+            {
+                Console.WriteLine("DoIt #2");
+            }
+
+            public void DoIt(string a, string b)
+            {
+                Console.WriteLine("DoIt #3");
+            }
+
+            public void DoIt(string a, int b, FooObj obj)
+            {
+                Console.WriteLine("DoIt #4");
+            }
+        }
+
+        [Test]
+        public void InvokeCacheTest()
+        {
+            RunTest(context =>
+            {
+                var modA = context.NewModule("modA");
+                var modB = context.NewModule("modB");
+                var modC = context.NewModule("modC");
+
+                var script = @"
+                    const self = this;
+                    const fooObj = this.Foo;
+
+                    function callAll() {
+                        self.DoIt('test', 15);
+                        self.DoIt('test', 123, 23.4);
+                        self.DoIt('test', '1, 2, 3');
+                        self.DoIt('test', 52, fooObj);
+                    }
+
+                    module.exports = {
+                        callAll: callAll
+                    };";
+
+                var a = new InvokeCacheObj();
+                var b = new InvokeCacheObj();
+                var c = new InvokeCacheObj();
+
+                context.RunScript(a, script, modA);
+                context.RunScript(b, script, modB);
+                context.RunScript(c, script, modC);
+
+                var callA = modA.GetExportedValue<IJsCallback>("callAll");
+                var callB = modB.GetExportedValue<IJsCallback>("callAll");
+                var callC = modC.GetExportedValue<IJsCallback>("callAll");
+
+                callA.Invoke();
+                callB.Invoke();
+                callC.Invoke();
+            });
+        }
+
+        public class Another
+        {
+            public override string ToString()
+            {
+                return "[Another]";
+            }
+        }
+
+        [Test]
+        public void TestLateCallback()
+        {
+            IJsCallback callback;
+
+            Action<IJsCallback, int> setTimer = (cb, ms) =>
+            {
+                Console.WriteLine("Adding Callback: {0}", ms);
+                callback = cb;
+            };
+            var runtime = new JsRuntime();
+            var context = NewTestExecutionContext(runtime);
+
+            context.SetValue<Action<IJsCallback, int>>("setProxyTimeout",
+                (jsCallback, i) =>
+                {
+                    jsCallback.Apply(this);
+                });
+            context.RunScript(@"
+'use strict';
+
+class JsElementApi {
+    constructor() {
+
+    }
+
+    doThing() {
+        console.log('doThing()');
+    }
+
+    toString() {
+        return '[JsElementApi]';
+    }
+}
+
+
+class AnotherContext {
+    constructor() {
+
+    }
+    toString() {
+        return '[AnotherContext]';
+    }
+}
+
+var another = new AnotherContext();
+//function setProxyTimeout(fn, to) {
+    //setTimeout(function() {
+//        fn.apply(another);
+    //}, to);
+//}
+
+// thisBinding
+var thisBinding = new JsElementApi();
+var module_1234 = { };
+
+// RunScript(Program)
+(function(module) {
+    const self = this;
+
+    var foo = 'Hello World';
+
+    function enter() {
+        start = start.bind(this);
+        console.log('enter()');
+        setProxyTimeout(start, 1000);
+    }
+
+    function start() {
+        console.log(this.toString());
+        console.log(foo);
+    }
+
+    function update() {
+        console.log('update()');
+    }
+
+    function exit() {
+        console.log('exit');
+    }
+
+    function msgMissing() {
+        console.log('msgMissing');
+    }
+
+    if (typeof module !== 'undefined') {
+        module.exports = {
+            enter: enter,
+            update: update,
+            exit: exit,
+            msgMissing: msgMissing
+        };
+    }
+
+}).call(thisBinding, module_1234);
+
+// Assuming thisBinding is global
+// GetFunction('enter'), etc...
+var enter = module_1234.exports.enter;
+var update = module_1234.exports.update;
+var exit = module_1234.exports.exit;
+var msgMissing = module_1234.exports.msgMissing;
+
+enter.apply(thisBinding);
+");
+            runtime.Dispose();
         }
     }
 }

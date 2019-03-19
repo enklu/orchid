@@ -28,7 +28,7 @@ namespace Enklu.Orchid.Chakra.Interop
             return _scope.Run(() =>
             {
                 JavaScriptValue[] jsValues = new JavaScriptValue[1 + args.Length];
-                jsValues[0] = null != @this ? _interop.ToJsObject(@this, @this.GetType()) : JavaScriptValue.Null;
+                jsValues[0] = null != @this ? _interop.ToJsObject(@this, @this.GetType()) : JavaScriptValue.Undefined;
                 for (var i = 0; i < args.Length; ++i)
                 {
                     var arg = args[i];

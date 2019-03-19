@@ -36,5 +36,15 @@ namespace Enklu.Orchid.Chakra.Interop
         /// This method returns a <see cref="HostField"/> for the property name provided.
         /// </summary>
         HostField FieldFor(string fieldName);
+
+        /// <summary>
+        /// Caches a method invocation with a specific key.
+        /// </summary>
+        void CacheInvocation(string invokeKey, HostMethod method);
+
+        /// <summary>
+        /// Attempts to get a cached method.
+        /// </summary>
+        bool TryGetInvocation(string invokeKey, out HostMethod method);
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using Enklu.Orchid.Logging;
 
@@ -172,7 +173,25 @@ namespace Enklu.Orchid.Chakra.Interop
                             return JavaScriptValue.Invalid;
                         }
 
-                        var hostMethodInfo = FindBestMethod(hostMethods, args, argLength);
+                        HostMethod hostMethodInfo;
+
+                        // Only a single method returned. Call this optimistically
+                        if (hostMethods.Count == 1)
+                        {
+                            hostMethodInfo = hostMethods[0];
+                        }
+                        else
+                        {
+                            // Get the Parameter Key, and look up cached invocation
+                            var invokeKey = JsConversions.ToInvokeKey(methodName, args, argLength);
+                            if (!hostType.TryGetInvocation(invokeKey, out hostMethodInfo))
+                            {
+                                // Otherwise, locate best method for these argument, and cache
+                                hostMethodInfo = FindBestMethod(hostMethods, args, argLength);
+                                hostType.CacheInvocation(invokeKey, hostMethodInfo);
+                            }
+                        }
+
                         if (null == hostMethodInfo)
                         {
                             LogMethodSelectionFailure(hostMethods, args, argLength);
@@ -568,4 +587,93 @@ namespace Enklu.Orchid.Chakra.Interop
             Log.Info(this, str.ToString());
         }
     }
+
+        // Alternate Way to Call Methods on an instance -- pass instance data via callback pointer
+        // Needs more testing, but could be faster!
+        /*
+        private class Entry
+        {
+            public string MethodName { get; set; }
+            public IHostType HostType { get; set; }
+            public WeakReference Instance { get; set; }
+        }
+
+        var entry = new Entry
+        {
+            HostType = hostType,
+            MethodName = methodName,
+            Instance = new WeakReference(instance)
+        };
+        var handle = GCHandle.Alloc(entry);
+        var ptr = GCHandle.ToIntPtr(handle);
+
+        binding.AddInstanceFunction(methodName, _methodInvoke, ptr);
+
+        private JavaScriptValue OnMethodInvoke(JavaScriptValue callee, bool isConstructCall, JavaScriptValue[] args, ushort argLength, IntPtr callbackData)
+        {
+            var handle = GCHandle.FromIntPtr(callbackData);
+            var entry = (Entry) handle.Target;
+
+            var hostType = entry.HostType;
+            var methodName = entry.MethodName;
+            var instance = entry.Instance.Target;
+
+            var totalParameters = argLength - 1;
+            var hostMethods = hostType.MethodsFor(methodName, totalParameters);
+            if (hostMethods.Count == 0)
+            {
+                var message = $"Calling host function that does not exist: [Method: {methodName}, Instance: {instance}]";
+                JsErrorHelper.SetJsException(message);
+                return JavaScriptValue.Invalid;
+            }
+
+            HostMethod hostMethodInfo;
+            if (hostMethods.Count == 1)
+            {
+                hostMethodInfo = hostMethods[0];
+            }
+            else
+            {
+                var invokeKey = ToInvokeKey(methodName, args, argLength);
+                if (!hostType.TryGetInvocation(invokeKey, out hostMethodInfo))
+                {
+                    hostMethodInfo = FindBestMethod(hostMethods, args, argLength);
+                    hostType.CacheInvocation(invokeKey, hostMethodInfo);
+                }
+                else
+                {
+                    Log.Debug(this, $"Using cache for: {invokeKey}");
+                }
+            }
+
+            if (null == hostMethodInfo)
+            {
+                LogMethodSelectionFailure(hostMethods, args, argLength);
+                JsErrorHelper.SetJsException(
+                    $"Calling host function that does not exist: [Method: {methodName}, Instance: {instance}]");
+                return JavaScriptValue.Invalid;
+            }
+
+            try
+            {
+                var realParams = ToParameters(hostMethodInfo, args, argLength);
+
+                var result = hostMethodInfo.Method.Invoke(instance, realParams);
+                var resultType = hostMethodInfo.ReturnType;
+                if (resultType == typeof(void))
+                {
+                    return JavaScriptValue.Invalid;
+                }
+
+                resultType = JsConversions.TypeFor(result, resultType);
+                return _interop.ToJsObject(result, resultType);
+            }
+            catch (Exception e)
+            {
+                LogMethodInvocationInfo(hostMethodInfo, instance);
+
+                throw;
+            }
+        }
+     */
 }

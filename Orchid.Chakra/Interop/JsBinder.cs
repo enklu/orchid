@@ -26,7 +26,7 @@ namespace Enklu.Orchid.Chakra.Interop
         public JsBinder(JsContextScope scope)
         {
             _scope = scope;
-            _objects = new JsObjectCache();
+            _objects = new JsObjectCache(scope);
             _jsGcCollect = JsGcCollect;
         }
 
@@ -44,6 +44,22 @@ namespace Enklu.Orchid.Chakra.Interop
                 var jsFunc = JsSafeDecorator.Decorate(func);
                 var jsValue = JavaScriptValue.CreateFunction(jsFunc);
                 Link(jsValue, jsFunc);
+
+                return jsValue;
+            });
+        }
+
+        /// <summary>
+        /// This method creates a new <see cref="JavaScriptValue"/> representing a JavaScript function, and
+        /// performs the binding of the resulting function with the native host function.
+        /// </summary>
+        /// <param name="func">The host function used to create the JavaScript function and binding.</param>
+        /// <param name="instanceData">A pointer to the instance data that shoukld be passed on each execution of the instance.</param>
+        public JavaScriptValue BindInstanceFunction(JavaScriptNativeFunction func, IntPtr instanceData)
+        {
+            return _scope.Run(() =>
+            {
+                var jsValue = JavaScriptValue.CreateFunction(func, instanceData);
 
                 return jsValue;
             });
@@ -154,6 +170,7 @@ namespace Enklu.Orchid.Chakra.Interop
             var handle = GCHandle.FromIntPtr(externalData);
             if (handle.IsAllocated)
             {
+                //Log.Debug(this, $"JsCollect: {jsValue.ValueType}, HostType: {handle.Target?.GetType()}");
                 _objects.Remove(handle.Target);
             }
 

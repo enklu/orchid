@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 using Enklu.Orchid.Logging;
 
 namespace Enklu.Orchid.Chakra.Interop
@@ -10,6 +11,11 @@ namespace Enklu.Orchid.Chakra.Interop
     /// </summary>
     public static class JsConversions
     {
+        /// <summary>
+        /// Used to build method invocation cache keys
+        /// </summary>
+        private static StringBuilder _keyBuilder = new StringBuilder();
+
         /// <summary>
         /// Boolean conversion types
         /// </summary>
@@ -182,6 +188,43 @@ namespace Enklu.Orchid.Chakra.Interop
             return hint;
         }
 
+        /// <summary>
+        /// Creates an invocation key for a specific method name.
+        /// </summary>
+        public static string ToInvokeKey(string methodName, JavaScriptValue[] args, ushort argCount)
+        {
+            // NOTE: Navive implementation. Designed to avoid type checking _every_ method call.
+            _keyBuilder.Clear();
+            _keyBuilder.Append(methodName).Append('_');
+            for (int i = 1; i < argCount; ++i)
+            {
+                _keyBuilder.Append(ToParamKey(args[i].ValueType));
+            }
 
+            return _keyBuilder.ToString();
+        }
+
+        /// <summary>
+        /// Returns a single character key for a JS argument type.
+        /// </summary>
+        private static char ToParamKey(JavaScriptValueType type)
+        {
+            switch (type)
+            {
+                case JavaScriptValueType.Array: return 'A';
+                case JavaScriptValueType.TypedArray: return 'A';
+                case JavaScriptValueType.Boolean: return 'B';
+                case JavaScriptValueType.Function: return 'F';
+                case JavaScriptValueType.Object: return 'O';
+                case JavaScriptValueType.Null: return 'O';
+                case JavaScriptValueType.Undefined: return 'O';
+                case JavaScriptValueType.Number: return 'N';
+                case JavaScriptValueType.String: return 'S';
+                default:
+                {
+                    return 'O';
+                }
+            }
+        }
     }
 }

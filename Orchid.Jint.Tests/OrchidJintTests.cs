@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Enklu.Orchid.Jint;
 using NUnit.Framework;
 
@@ -377,14 +378,14 @@ namespace Enklu.Orchid.Jint.Tests
                         Console.WriteLine($"i: {i}, Bar: {b.Property}");
                     });
 
-                context.SetValue("bar", new Bar(52) {Widget = new Widget() {StrProp = "WidgetProp", IntProp = 5}});
+                context.SetValue("bar", new Bar(52) { Widget = new Widget() { StrProp = "WidgetProp", IntProp = 5 } });
                 context.RunScript(@"
                     passBar(33, bar);
                     var w = bar.Widget;
                     console.log(w.StrProp);");
             });
         }
-
+        /*
         [Test]
         public void ListTest()
         {
@@ -398,6 +399,7 @@ namespace Enklu.Orchid.Jint.Tests
                     }");
             });
         }
+        */
 
         public class DelegateRefTester
         {
@@ -487,98 +489,188 @@ namespace Enklu.Orchid.Jint.Tests
                 context.RunScript(@"
                     function foo(a, b, c) {
                         console.log('a: ' + a + ', b: ' + b + ', c: ' + c);
-                    }
-                    var testStr = 'hello world';
-                    var testInt = 123;
-                    var testNum = 32.3;
-                    ");
+                    }");
 
                 var callback = context.GetValue<IJsCallback>("foo");
                 callback.Invoke("a", 23, 51);
-
-                var callback2 = context.GetValue<IJsCallback>("foo");
-                Assert.IsTrue(callback == callback2);
-
-                var testStr = context.GetValue<string>("testStr");
-                var testInt = context.GetValue<int>("testInt");
-                var testNum = context.GetValue<float>("testNum");
-
-                Console.WriteLine($"a: {testStr}, b: {testInt}, c: {testNum}");
             });
         }
 
-        public class ThisBinding
+        public class RequiresFoo
         {
-            private string _name;
-            public string Name
+            public int IntProp { get; set; }
+
+            private IJsCallback _callback;
+
+            public void register(string name, IJsCallback callback)
             {
-                get => _name;
-                set
-                {
-                    _name = value;
-                    Console.WriteLine("Name is: {0}", _name);
-                }
+                Console.WriteLine("register: " + name);
+                _callback = callback;
             }
 
+            public void Update(Context context)
+            {
+                _callback.Apply(this, context);
+            }
+        }
+
+        public class Context
+        {
+            public Context scale(float s)
+            {
+                return this;
+            }
+
+            public Context add(float x, float y)
+            {
+                return this;
+            }
+
+            public Context color(float r, float g, float b)
+            {
+                return this;
+            }
         }
 
         [Test]
-        public void ThisBindingTest()
+        public void TestRequires()
         {
+            Context c = new Context();
+            RequiresFoo foo = new RequiresFoo() { IntProp = 15 };
+
+            Func<string, object> Resolve = s => foo;
+
             RunTest(context =>
             {
-                var thisBinding = new ThisBinding();
 
-                context.RunScript(thisBinding, @"
-                    var self = this;
+                context.SetValue("require", new Func<string, object>(value => Resolve(value)));
 
-                    function enter() {
-                        self.Name = 'Slim Shady';
+                context.RunScript(@"
+                    var drawing = require('drawing') || { register: function() {} };
+
+                    drawing.register('test', draw);
+
+                    function draw(context) {
+                        context
+                            .scale(0.1).add(3.2, 1.5).color(23, 21, 23)
+                            .add(5.2, 2.3).scale(0.1);
                     }
                 ");
 
-                IJsCallback enter = context.GetValue<IJsCallback>("enter");
-                enter.Invoke();
+                for (int i = 0; i < 100; ++i)
+                {
+                    foo.Update(c);
+                    Thread.Sleep(25);
+                }
+
             });
         }
 
-        /*
+        public class BaseClass
+        {
+            public void DoSomething(int a)
+            {
+                Console.WriteLine("A: " + a);
+            }
+        }
+
+        public class SubClass : BaseClass
+        {
+            public void DoAThing(int b)
+            {
+                //
+            }
+        }
+
         [Test]
-        public void DelegateTest()
+        public void BaseClassTest()
         {
             RunTest(context =>
             {
-                Action callback1 = () =>
-                {
-                    Console.WriteLine("Callback #1 Called!");
-                };
+                var a = new SubClass();
 
-                Action<string> callback2 = s =>
-                {
-                    Console.WriteLine("Callback #2 Called With: {0}", s);
-                };
-
-                Func<string, int> callback3 = s =>
-                {
-                    int retVal = 32;
-                    Console.WriteLine("Callback #3 Called With: {0}, Returning: {1}", s, retVal);
-                    return retVal;
-                };
-
-                context.SetValue("callback1", (Delegate) callback1);
-                context.SetValue("callback2", (Delegate) callback2);
-                context.SetValue("callback3", (Delegate) callback3);
-
-                context.RunScript(@"
-                    callback1();
-                    callback2('2-input');
-                    var result = callback3('3-input');
-
-                    console.log('Result: ' + result);
+                context.RunScript(a, @"
+                    this.DoAThing(5);
+                    this.DoSomething(10);
                 ");
             });
         }
-        */
+
+        public class InnerInner
+        {
+            public void Dive(Action<Action<int>> callback)
+            {
+                Console.WriteLine("InnerInner::Dive()");
+
+                callback((i) =>
+                {
+                    Console.WriteLine("InnerInner::Dive::callback()");
+
+                    Boom();
+                });
+            }
+
+            private void Boom()
+            {
+                throw new Exception("Boom!");
+            }
+        }
+
+        public class Inner
+        {
+            public InnerInner Dive()
+            {
+                Console.WriteLine("Inner::Dive()");
+                return new InnerInner();
+            }
+        }
+
+        public class Outer
+        {
+            public void Dive(Action<Inner> action)
+            {
+                Console.WriteLine("Outer::Dive()");
+                action(new Inner());
+            }
+        }
+
+        [Test]
+        public void DeepExceptionPropagationTest()
+        {
+            RunTest(context =>
+            {
+                var outer = new Outer();
+                //context.SetValue("outer", outer);
+                context.RunScript(@"
+                    function acceptOuter(o) {
+                        o.Dive(function(inner) {
+                            var innerInner = inner.Dive();
+
+                            innerInner.Dive(function(callback) {
+                                console.log('innerInner.Dive()');
+                                callback(5);
+                            });
+                        });
+                    }
+                ");
+
+                var callback = context.GetValue<IJsCallback>("acceptOuter");
+                Action a = () => callback.Invoke(outer);
+                context.SetValue("execute", a);
+
+                Exception e = null;
+                try
+                {
+                    context.RunScript("execute();");
+                }
+                catch (Exception ee)
+                {
+                    e = ee;
+                }
+
+                Assert.IsNotNull(e);
+            });
+        }
 
         public class CallCount
         {
@@ -637,5 +729,260 @@ namespace Enklu.Orchid.Jint.Tests
                 fn.Invoke();
             });
         }
+
+        public class BaseReflectionTestObject
+        {
+            public string BaseField = "bfield";
+
+            public int BaseProp { get; set; }
+
+            public void BaseMethod()
+            { }
+        }
+
+        [JsDeclaredOnly]
+        public class ReflectionTestObject : BaseReflectionTestObject
+        {
+            public string Field = "field";
+
+            [DenyJsAccess]
+            public string IgnoredField = "ignored";
+
+            public int Prop { get; set; }
+
+            [DenyJsAccess]
+            public int IgnoredProp { get; set; }
+
+            public void Method() { }
+
+            [DenyJsAccess]
+            public void IgnoredMethod() { }
+        }
+
+        public class Element
+        {
+            public string Name { get; set; }
+        }
+
+        public class ArrayContainer
+        {
+            public Element[] Elements { get; set; } =
+            {
+                new Element {Name = "A"},
+                new Element {Name = "B"},
+                new Element {Name = "C"},
+                new Element {Name = "D"},
+                new Element {Name = "E"},
+                new Element {Name = "F"},
+                new Element {Name = "G"},
+                new Element {Name = "H"}
+            };
+        }
+
+        [Test]
+        public void TestArrayStuff()
+        {
+            RunTest(context =>
+            {
+                context.SetValue("ele", new ArrayContainer());
+                context.RunScript(@"
+                    var elements = ele.Elements;
+
+                    for (var i in elements) {
+                        console.log(elements[i].Name);
+                    }
+                ");
+            });
+        }
+
+        public class FooObj
+        {
+            public string Name { get; set; }
+        }
+
+        public class VarArgTest
+        {
+            private readonly Action<int> OnCall;
+
+            public VarArgTest(Action<int> onCall)
+            {
+                OnCall = onCall;
+            }
+
+            public void Accept(string a, string b)
+            {
+                Console.WriteLine("First Accept");
+                OnCall(1);
+            }
+            public void Accept(string a, int b, params object[] strings)
+            {
+                Console.WriteLine("Second Accept");
+                OnCall(2);
+            }
+
+            public void Accept(FooObj foo, params object[] obj)
+            {
+                Console.WriteLine("Third Accept");
+                OnCall(3);
+            }
+
+            public void Accept(int i = 5, params object[] obj)
+            {
+                Console.WriteLine("Fourth Accept");
+                OnCall(4);
+            }
+
+            public void Accept(bool a, string b = "hello", int r = 23, params string[] strs)
+            {
+                Console.WriteLine("Fifth Accept");
+                OnCall(5);
+            }
+
+            public void Accept(int a, int[] ints, params string[] strs)
+            {
+                Console.WriteLine("Sixth Accept");
+                OnCall(6);
+            }
+        }
+
+        public class NullElement
+        {
+            public NullElement()
+            {
+
+            }
+        }
+
+        public class NullReturner
+        {
+            public NullElement GetProperty(string s)
+            {
+                return null;
+            }
+        }
+
+        [Test]
+        public void TestNullCarryThrough()
+        {
+            RunTest(context =>
+            {
+                context.SetValue("thing", new NullReturner());
+                context.RunScript(@"
+                    var aThing = thing.GetProperty('foo');
+                    assert(!aThing);
+                ");
+            });
+        }
+
+        [Test]
+        public void DynamicObjTest()
+        {
+            RunTest(context =>
+            {
+                context.SetValue("foo", new FooObj { Name = "TestFoo" });
+                context.RunScript(@"
+                    function output(someObj) {
+                        for (var k in someObj) {
+                            console.log('key: ' + k + ' = ' + someObj[k]);
+                        }
+                    }
+                ");
+
+                var callback = context.GetValue<IJsCallback>("output");
+                context.SetValue("receiver", new Action<object>(o =>
+                {
+                    Console.WriteLine("Receiver");
+
+                    var d = (Dictionary<string, object>)o;
+                    foreach (var key in d.Keys)
+                    {
+                        Console.WriteLine($"Key: {key}, Value: {d[key]}");
+                    }
+
+                    callback.Invoke(o);
+                }));
+
+                context.RunScript(@"
+                    receiver({
+                        prop1: 'test 1 2 3',
+                        prop2: 24,
+                        prop3: true,
+                        prop4: foo
+                    });
+                ");
+            });
+        }
+
+        public class InvokeCacheObj
+        {
+            public FooObj Foo { get; set; } = new FooObj();
+            public InvokeCacheObj()
+            {
+
+            }
+
+            public void DoIt(string a, int b)
+            {
+                Console.WriteLine("DoIt #1");
+            }
+
+            public void DoIt(string a, int b, float c)
+            {
+                Console.WriteLine("DoIt #2");
+            }
+
+            public void DoIt(string a, string b)
+            {
+                Console.WriteLine("DoIt #3");
+            }
+
+            public void DoIt(string a, int b, FooObj obj)
+            {
+                Console.WriteLine("DoIt #4");
+            }
+        }
+
+        [Test]
+        public void InvokeCacheTest()
+        {
+            RunTest(context =>
+            {
+                var modA = context.NewModule("modA");
+                var modB = context.NewModule("modB");
+                var modC = context.NewModule("modC");
+
+                var script = @"
+                    const self = this;
+                    const fooObj = this.Foo;
+
+                    function callAll() {
+                        self.DoIt('test', 15);
+                        self.DoIt('test', 123, 23.4);
+                        self.DoIt('test', '1, 2, 3');
+                        self.DoIt('test', 52, fooObj);
+                    }
+
+                    module.exports = {
+                        callAll: callAll
+                    };";
+
+                var a = new InvokeCacheObj();
+                var b = new InvokeCacheObj();
+                var c = new InvokeCacheObj();
+
+                context.RunScript(a, script, modA);
+                context.RunScript(b, script, modB);
+                context.RunScript(c, script, modC);
+
+                var callA = modA.GetExportedValue<IJsCallback>("callAll");
+                var callB = modB.GetExportedValue<IJsCallback>("callAll");
+                var callC = modC.GetExportedValue<IJsCallback>("callAll");
+
+                callA.Invoke();
+                callB.Invoke();
+                callC.Invoke();
+            });
+        }
+
     }
 }

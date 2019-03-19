@@ -7,13 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orchid.Chakra", "Orchid.Cha
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orchid.Chakra.Tests", "Orchid.Chakra.Tests\Orchid.Chakra.Tests.csproj", "{8164B1C8-1245-414D-A428-B695998CC3D0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orchid", "Orchid\Orchid.csproj", "{90141EBB-0580-4A43-9D05-5E8F4D58ECF4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orchid", "Orchid\Orchid.csproj", "{90141EBB-0580-4A43-9D05-5E8F4D58ECF4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orchid.Jint", "Orchid.Jint\Orchid.Jint.csproj", "{71B7AA64-121E-4B2E-A50F-FC415EE8897B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orchid.Jint", "Orchid.Jint\Orchid.Jint.csproj", "{71B7AA64-121E-4B2E-A50F-FC415EE8897B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orchid.Jint.Tests", "Orchid.Jint.Tests\Orchid.Jint.Tests.csproj", "{04BE75C2-9F46-42CD-831A-CDEC54CD965B}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Jint", "..\Jint\Jint\Jint.csproj", "{56480C03-0200-4255-B1B2-BD3B726579AC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orchid.Jint.Tests", "Orchid.Jint.Tests\Orchid.Jint.Tests.csproj", "{04BE75C2-9F46-42CD-831A-CDEC54CD965B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,10 +39,6 @@ Global
 		{04BE75C2-9F46-42CD-831A-CDEC54CD965B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{04BE75C2-9F46-42CD-831A-CDEC54CD965B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{04BE75C2-9F46-42CD-831A-CDEC54CD965B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{56480C03-0200-4255-B1B2-BD3B726579AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{56480C03-0200-4255-B1B2-BD3B726579AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{56480C03-0200-4255-B1B2-BD3B726579AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{56480C03-0200-4255-B1B2-BD3B726579AC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

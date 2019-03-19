@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace Enklu.Orchid.Chakra.Interop
@@ -27,6 +28,22 @@ namespace Enklu.Orchid.Chakra.Interop
             _binder = binder;
             _interop = interop;
             _value = value;
+        }
+
+        /// <summary>
+        /// This method binds a function to a specific field on a JavaScript object.
+        /// </summary>
+        /// <param name="name">The name of the field.</param>
+        /// <param name="jsFunction">The callback function to execute when the JavaScript function is invoked.</param>
+        /// <param name="instanceData">Any instance data that should be passed when the function is executed.</param>
+        public void AddInstanceFunction(string name, JavaScriptNativeFunction jsFunction, IntPtr instanceData)
+        {
+            _scope.Run(() =>
+            {
+                var jsValue = _binder.BindInstanceFunction(jsFunction, instanceData);
+
+                _value.SetProperty(JavaScriptPropertyId.FromString(name), jsValue, true);
+            });
         }
 
         /// <summary>
@@ -154,6 +171,5 @@ namespace Enklu.Orchid.Chakra.Interop
                 _value.SetProperty(JavaScriptPropertyId.FromString(name), jsValue, true);
             });
         }
-
     }
 }
