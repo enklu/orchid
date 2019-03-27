@@ -29,5 +29,10 @@
         /// <returns>JavaScript functions with undefined returns will translate to null. Otherwise, a host object converted
         /// from the javascript callback return value.</returns>
         object Invoke(params object[] args);
+
+        /// <summary>
+        /// Binds the execution of the callback to a specific object instance.
+        /// </summary>
+        void Bind(object @this);
     }
 }

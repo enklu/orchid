@@ -20,6 +20,11 @@ namespace Enklu.Orchid.Jint
         /// </summary>
         private readonly Func<JsValue, JsValue[], JsValue> _callback;
 
+        /// <summary>
+        /// The @this binding for callback execution
+        /// </summary>
+        private JsValue _binding;
+
         /// <inheritDoc />
         public IJsExecutionContext ExecutionContext => _context;
 
@@ -35,7 +40,10 @@ namespace Enklu.Orchid.Jint
         /// <inheritDoc />
         public object Apply(object @this, params object[] args)
         {
-            var jsThis = JsValue.FromObject(_context.Engine, @this);
+            var jsThis = _binding == null
+                ? JsValue.FromObject(_context.Engine, @this)
+                : _binding;
+
             var jsArgs = new JsValue[args.Length];
 
             for (int i = 0; i < args.Length; ++i)
@@ -50,7 +58,7 @@ namespace Enklu.Orchid.Jint
         /// <inheritDoc />
         public object Invoke(params object[] args)
         {
-            var jsThis = JsValue.Null;
+            var jsThis = _binding == null ? JsValue.Null : _binding;
             var jsArgs = new JsValue[args.Length];
 
             for (int i = 0; i < args.Length; ++i)
@@ -60,6 +68,17 @@ namespace Enklu.Orchid.Jint
 
             var result = _callback(jsThis, jsArgs);
             return result.ToObject();
+        }
+
+        /// <inheritDoc />
+        public void Bind(object @this)
+        {
+            if (null != _binding)
+            {
+                return;
+            }
+
+            _binding = JsValue.FromObject(_context.Engine, @this);
         }
     }
 }

@@ -11,6 +11,7 @@ namespace Enklu.Orchid.Chakra.Interop
         private readonly JsContextScope _scope;
         private readonly JsInterop _interop;
         private readonly JavaScriptValue _callback;
+        private JavaScriptValue _binding;
 
         /// <inheritDoc />
         public IJsExecutionContext ExecutionContext => _context;
@@ -33,7 +34,15 @@ namespace Enklu.Orchid.Chakra.Interop
             return _scope.Run(() =>
             {
                 JavaScriptValue[] jsValues = new JavaScriptValue[1 + args.Length];
-                jsValues[0] = null != @this ? _interop.ToJsObject(@this, @this.GetType()) : JavaScriptValue.Undefined;
+                if (_binding.IsValid)
+                {
+                    jsValues[0] = _binding;
+                }
+                else
+                {
+                    jsValues[0] = null != @this ? _interop.ToJsObject(@this, @this.GetType()) : JavaScriptValue.Undefined;
+                }
+                
                 for (var i = 0; i < args.Length; ++i)
                 {
                     var arg = args[i];
@@ -51,7 +60,8 @@ namespace Enklu.Orchid.Chakra.Interop
             return _scope.Run(() =>
             {
                 JavaScriptValue[] jsValues = new JavaScriptValue[1 + args.Length];
-                jsValues[0] = JavaScriptValue.GlobalObject;
+                jsValues[0] = _binding.IsValid ? _binding : JavaScriptValue.GlobalObject;
+
                 for (var i = 0; i < args.Length; ++i)
                 {
                     var arg = args[i];
@@ -60,6 +70,20 @@ namespace Enklu.Orchid.Chakra.Interop
                 }
 
                 return TryInvoke(jsValues);
+            });
+        }
+
+        /// <inheritdoc />
+        public void Bind(object @this)
+        {
+            if (_binding.IsValid)
+            {
+                return;
+            }
+
+            _scope.Run(() =>
+            {
+                _binding = _interop.ToJsObject(@this, @this.GetType());
             });
         }
 
