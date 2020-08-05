@@ -66,7 +66,7 @@ namespace Enklu.Orchid.Jint
 
             for (int i = 0; i < argsLength; ++i)
             {
-                jsArgs[i] = JsValue.FromObject(_context.Engine, argsLength);
+                jsArgs[i] = JsValue.FromObject(_context.Engine, args[i]);
             }
 
             var result = _callback(jsThis, jsArgs);

@@ -5,9 +5,9 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company>Enklu</Company>
     <Authors>Enklu</Authors>
-    <PackageVersion>1.0.1</PackageVersion>
-    <AssemblyVersion>1.0.1</AssemblyVersion>
-    <FileVersion>1.0.1</FileVersion>
+    <PackageVersion>1.0.2</PackageVersion>
+    <AssemblyVersion>1.0.2</AssemblyVersion>
+    <FileVersion>1.0.2</FileVersion>
       <!--<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies> -->
   </PropertyGroup>
 
