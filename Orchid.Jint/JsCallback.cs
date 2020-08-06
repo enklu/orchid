@@ -44,9 +44,10 @@ namespace Enklu.Orchid.Jint
                 ? JsValue.FromObject(_context.Engine, @this)
                 : _binding;
 
-            var jsArgs = new JsValue[args.Length];
+            var argsLength = args?.Length ?? 0;
+            var jsArgs = new JsValue[argsLength];
 
-            for (int i = 0; i < args.Length; ++i)
+            for (int i = 0; i < argsLength; ++i)
             {
                 jsArgs[i] = JsValue.FromObject(_context.Engine, args[i]);
             }
@@ -59,9 +60,11 @@ namespace Enklu.Orchid.Jint
         public object Invoke(params object[] args)
         {
             var jsThis = _binding == null ? JsValue.Null : _binding;
-            var jsArgs = new JsValue[args.Length];
+            
+            var argsLength = args?.Length ?? 0;
+            var jsArgs = new JsValue[argsLength];
 
-            for (int i = 0; i < args.Length; ++i)
+            for (int i = 0; i < argsLength; ++i)
             {
                 jsArgs[i] = JsValue.FromObject(_context.Engine, args[i]);
             }
