@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Reflection;
+using Enklu.Orchid.Logging;
 using Jint;
 using Jint.Native;
+using Jint.Runtime;
 
 namespace Enklu.Orchid.Jint
 {
@@ -85,29 +87,50 @@ namespace Enklu.Orchid.Jint
         }
 
         /// <inheritdoc />
-        public void RunScript(string script)
+        public void RunScript(string name, string script)
         {
-            _engine.Execute(script);
+            try
+            {
+                _engine.Execute(script);
+            }
+            catch (JavaScriptException jsError)
+            {
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+            }
         }
 
         /// <inheritdoc />
-        public void RunScript(object @this, string script)
+        public void RunScript(string name, object @this, string script)
         {
             var jsThis = JsValue.FromObject(_engine, @this);
             var jsScript = $"(function() {{ {script} }})";
 
             var fn = _engine.Execute(jsScript).GetCompletionValue();
-            _engine.Invoke(fn, jsThis, new object[] { });
+            try
+            {
+                _engine.Invoke(fn, jsThis, new object[] { });
+            }
+            catch (JavaScriptException jsError)
+            {
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+            }
         }
 
         /// <inheritdoc />
-        public void RunScript(object @this, string script, IJsModule module)
+        public void RunScript(string name, object @this, string script, IJsModule module)
         {
             var jsThis = JsValue.FromObject(_engine, @this);
             var jsScript = $"(function(module) {{ {script} }})";
 
             var fn = _engine.Execute(jsScript).GetCompletionValue();
-            _engine.Invoke(fn, jsThis, new object[] { ((JsModule) module).Module });
+            try
+            {
+                _engine.Invoke(fn, jsThis, new object[] { ((JsModule) module).Module });
+            }
+            catch (JavaScriptException jsError)
+            {
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+            }
         }
 
         /// <inheritdoc />
