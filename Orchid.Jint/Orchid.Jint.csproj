@@ -6,8 +6,8 @@
     <Company>Enklu</Company>
     <Authors>Enklu</Authors>
     <PackageVersion>1.0.2</PackageVersion>
-    <AssemblyVersion>1.0.2</AssemblyVersion>
-    <FileVersion>1.0.2</FileVersion>
+    <AssemblyVersion>2020.11.0</AssemblyVersion>
+    <FileVersion>2020.11.0</FileVersion>
       <!--<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies> -->
   </PropertyGroup>
 
