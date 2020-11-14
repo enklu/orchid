@@ -1,6 +1,7 @@
 ﻿using Jint;
 using Jint.Native;
 using Jint.Native.Object;
+using Jint.Runtime;
 
 namespace Enklu.Orchid.Jint
 {
@@ -11,17 +12,18 @@ namespace Enklu.Orchid.Jint
         private ObjectInstance _exports;
 
         public string ModuleId { get; }
+        
+        public string Name { get; }
 
         public JsValue Module { get; }
 
-        public JsModule(Engine engine, string moduleId)
+        public JsModule(Engine engine, string moduleId, string name = null)
         {
             _engine = engine;
             ModuleId = moduleId;
+            Name = name ?? moduleId;
 
-            // FIXME: Probably a faster way to create an Object
-            _engine.Execute("var " + moduleId + " = { };");
-            Module = _engine.GetValue(moduleId);
+            Module = _engine.Object.Construct(Arguments.Empty);
         }
 
         public T GetExportedValue<T>(string name)
@@ -37,7 +39,14 @@ namespace Enklu.Orchid.Jint
                 _exports = moduleObj.Get("exports").AsObject();
             }
 
-            return _exports.Get(name).To<T>(_engine.ClrTypeConverter);
+            var export = _exports.Get(name).To<T>(_engine.ClrTypeConverter);
+
+            if (export is IJsCallback callback)
+            {
+                callback.ExecutionModule = this;
+            }
+            
+            return export;
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Enklu.Orchid.Jint;
+using Jint.Runtime;
 using NUnit.Framework;
 
 namespace Enklu.Orchid.Jint.Tests
@@ -702,7 +703,7 @@ namespace Enklu.Orchid.Jint.Tests
 
                     function exit()
                     {
-                        console.log('exit');
+                        nothing.error
                     }
 
                     function msgMissing()
@@ -725,8 +726,17 @@ namespace Enklu.Orchid.Jint.Tests
 
                 context.RunScript(cc, script, module);
 
-                var fn = module.GetExportedValue<IJsCallback>("enter");
-                fn.Invoke();
+                var fnEnter = module.GetExportedValue<IJsCallback>("enter");
+                Assert.AreEqual(module, fnEnter.ExecutionModule);
+                
+                fnEnter.Invoke();
+                Assert.IsNull(fnEnter.ExecutionError);
+
+                var fnExit = module.GetExportedValue<IJsCallback>("exit");
+                Assert.AreEqual(module, fnExit.ExecutionModule);
+                
+                fnExit.Invoke();
+                Assert.NotNull(fnExit.ExecutionError);
             });
         }
 

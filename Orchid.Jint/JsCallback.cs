@@ -1,6 +1,8 @@
 ﻿using System;
+using Enklu.Orchid.Logging;
 using Jint;
 using Jint.Native;
+using Jint.Runtime;
 
 namespace Enklu.Orchid.Jint
 {
@@ -27,6 +29,12 @@ namespace Enklu.Orchid.Jint
 
         /// <inheritDoc />
         public IJsExecutionContext ExecutionContext => _context;
+        
+        /// <inheritDoc />
+        public IJsModule ExecutionModule { get; set; }
+
+        /// <inheritDoc />
+        public Exception ExecutionError { get; private set; }
 
         /// <summary>
         /// Creates a new <see cref="JsCallback"/> instance.
@@ -43,7 +51,7 @@ namespace Enklu.Orchid.Jint
             var jsThis = _binding == null
                 ? JsValue.FromObject(_context.Engine, @this)
                 : _binding;
-
+            
             var argsLength = args?.Length ?? 0;
             var jsArgs = new JsValue[argsLength];
 
@@ -52,8 +60,22 @@ namespace Enklu.Orchid.Jint
                 jsArgs[i] = JsValue.FromObject(_context.Engine, args[i]);
             }
 
-            var result = _callback(jsThis, jsArgs);
-            return result.ToObject();
+            try
+            {
+                var result = _callback(jsThis, jsArgs);
+                return result.ToObject();
+            }
+            catch (JavaScriptException jsError)
+            {
+                Log.Warning("Scripting", "[{0}:{1}] {2}", ExecutionModule?.Name, jsError.LineNumber, jsError.Message);
+                ExecutionError = jsError;
+            }
+            catch (Exception exception)
+            {
+                Log.Warning("Scripting", "[{0}] An unknown error has occured: {1}", ExecutionModule?.Name, exception);
+                ExecutionError = exception;
+            }
+            return null;
         }
 
         /// <inheritDoc />
@@ -69,8 +91,22 @@ namespace Enklu.Orchid.Jint
                 jsArgs[i] = JsValue.FromObject(_context.Engine, args[i]);
             }
 
-            var result = _callback(jsThis, jsArgs);
-            return result.ToObject();
+            try
+            {
+                var result = _callback(jsThis, jsArgs);
+                return result.ToObject();
+            }
+            catch (JavaScriptException jsError)
+            {
+                Log.Warning("Scripting", "[{0}:{1}] {2}", ExecutionModule?.Name, jsError.LineNumber, jsError.Message);
+                ExecutionError = jsError;
+            }
+            catch (Exception exception)
+            {
+                Log.Warning("Scripting", "[{0}] An unknown error has occured: {1}", ExecutionModule?.Name, exception);
+                ExecutionError = exception;
+            }
+            return null;
         }
 
         /// <inheritDoc />

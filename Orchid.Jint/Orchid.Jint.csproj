@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net35;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net451;netstandard2.0</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company>Enklu</Company>
     <Authors>Enklu</Authors>

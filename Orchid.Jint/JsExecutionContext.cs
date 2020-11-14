@@ -34,9 +34,9 @@ namespace Enklu.Orchid.Jint
         }
 
         /// <inheritdoc />
-        public IJsModule NewModule(string moduleId)
+        public IJsModule NewModule(string moduleId, string name = null)
         {
-            return new JsModule(_engine, moduleId);
+            return new JsModule(_engine, moduleId, name);
         }
 
         /// <inheritdoc />
@@ -94,7 +94,7 @@ namespace Enklu.Orchid.Jint
         public void RunScript(object @this, string script)
         {
             var jsThis = JsValue.FromObject(_engine, @this);
-            var jsScript = string.Format("(function() {{ {0} }})", script);
+            var jsScript = $"(function() {{ {script} }})";
 
             var fn = _engine.Execute(jsScript).GetCompletionValue();
             _engine.Invoke(fn, jsThis, new object[] { });
@@ -104,7 +104,7 @@ namespace Enklu.Orchid.Jint
         public void RunScript(object @this, string script, IJsModule module)
         {
             var jsThis = JsValue.FromObject(_engine, @this);
-            var jsScript = string.Format("(function(module) {{ {0} }})", script);
+            var jsScript = $"(function(module) {{ {script} }})";
 
             var fn = _engine.Execute(jsScript).GetCompletionValue();
             _engine.Invoke(fn, jsThis, new object[] { ((JsModule) module).Module });
