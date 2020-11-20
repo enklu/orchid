@@ -711,32 +711,40 @@ namespace Enklu.Orchid.Jint.Tests
                         console.log('msgMissing');
                     }
 
+                    function buildCallback() 
+                    {
+                        return function() {
+                            nothing.error
+                        };
+                    }
+
                     if (typeof module !== 'undefined')
                     {
                         module.exports = {
                             enter: enter,
                             update: update,
                             exit: exit,
-                            msgMissing: msgMissing
+                            msgMissing: msgMissing,
+                            buildCallback: buildCallback
                         };
                     }";
 
                 var cc = new CallCount();
-                var module = context.NewModule("module_1234");
+                var moduleName = "TestModule";
+                var module = context.NewModule("module_1234", moduleName);
 
                 context.RunScript("Test", cc, script, module);
 
                 var fnEnter = module.GetExportedValue<IJsCallback>("enter");
-                Assert.AreEqual(module, fnEnter.ExecutionModule);
                 
                 fnEnter.Invoke();
                 Assert.IsNull(fnEnter.ExecutionError);
 
                 var fnExit = module.GetExportedValue<IJsCallback>("exit");
-                Assert.AreEqual(module, fnExit.ExecutionModule);
                 
                 fnExit.Invoke();
                 Assert.NotNull(fnExit.ExecutionError);
+                Assert.AreEqual(moduleName, ((JavaScriptException) fnExit.ExecutionError).Location.Source);
             });
         }
 

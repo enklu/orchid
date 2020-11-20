@@ -14,11 +14,6 @@ namespace Enklu.Orchid
         IJsExecutionContext ExecutionContext { get; }
         
         /// <summary>
-        /// The <see cref="IJsModule"/> the callback was created in.
-        /// </summary>
-        IJsModule ExecutionModule { get; set; }
-        
-        /// <summary>
         /// The most recent error, if any, from calling Apply or Invoke.
         /// </summary>
         Exception ExecutionError { get; }

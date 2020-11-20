@@ -39,14 +39,7 @@ namespace Enklu.Orchid.Jint
                 _exports = moduleObj.Get("exports").AsObject();
             }
 
-            var export = _exports.Get(name).To<T>(_engine.ClrTypeConverter);
-
-            if (export is IJsCallback callback)
-            {
-                callback.ExecutionModule = this;
-            }
-            
-            return export;
+            return _exports.Get(name).To<T>(_engine.ClrTypeConverter);
         }
     }
 }

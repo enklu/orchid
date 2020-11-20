@@ -242,7 +242,7 @@ namespace Enklu.Orchid.Chakra.Tests
         private JsExecutionContext NewTestExecutionContext(JsRuntime runtime)
         {
             var context = (JsExecutionContext) runtime.NewExecutionContext();
-            context.RunScript("function assert(a) { if (!a) throw new Error('Failed Assertion'); };");
+            context.RunScript(string.Empty, "function assert(a) { if (!a) throw new Error('Failed Assertion'); };");
 
             var binding = context.NewJsObject();
             binding.AddFunction("log",
@@ -300,7 +300,7 @@ namespace Enklu.Orchid.Chakra.Tests
         {
             RunTest(context =>
             {
-                context.RunScript("console.log('Hello World!');");
+                context.RunScript(string.Empty, "console.log('Hello World!');");
             });
 
             Assert.AreEqual(1, _totalLogCalls);
@@ -312,7 +312,7 @@ namespace Enklu.Orchid.Chakra.Tests
             RunTest(context =>
             {
                 context.SetValue("simple", _simpleObject);
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     simple.SingleByteParameter(6);
                     simple.SingleShortParameter(55);
                     simple.SingleIntParameter(1024);
@@ -343,7 +343,7 @@ namespace Enklu.Orchid.Chakra.Tests
                 try
                 {
                     context.SetValue("simple", _simpleObject);
-                    context.RunScript(@"
+                    context.RunScript(string.Empty, @"
                         simple.SingleByteParameter(simple.A);
                         simple.SingleShortParameter(simple.B);
                         simple.SingleIntParameter(simple.C);
@@ -379,7 +379,7 @@ namespace Enklu.Orchid.Chakra.Tests
             {
                 var foo = new Foo();
                 context.SetValue("foo", foo);
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     foo.test(function(a, b, c) {
                         console.log('a: ' + a + ', b: ' + b + ', c: ' + c);
 
@@ -412,7 +412,7 @@ namespace Enklu.Orchid.Chakra.Tests
                 jsObj.SetValue("run", a);
                 context.SetValue("test", jsObj);
 
-                context.RunScript("test.run(5, 'testing 1 2 3');");
+                context.RunScript(string.Empty, "test.run(5, 'testing 1 2 3');");
             });
 
             Assert.AreEqual(1, callCount);
@@ -435,7 +435,7 @@ namespace Enklu.Orchid.Chakra.Tests
                 jsObj.SetValue("run", a);
                 context.SetValue("test", jsObj);
 
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     var result = test.run(5, 'testing 1 2 3');
                     console.log(result);
 
@@ -462,7 +462,7 @@ namespace Enklu.Orchid.Chakra.Tests
                     });
 
                 context.SetValue("bar", new Bar(52) {Widget = new Widget() {StrProp = "WidgetProp", IntProp = 5}});
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     passBar(33, bar);
                     var w = bar.Widget;
                     console.log(w.StrProp);");
@@ -475,7 +475,7 @@ namespace Enklu.Orchid.Chakra.Tests
             RunTest(context =>
             {
                 context.SetValue("container", new Container());
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     var all = container.all();
                     for (var i = 0; i < all.Count; ++i) {
                         console.log(all.get_Item(i));
@@ -507,7 +507,7 @@ namespace Enklu.Orchid.Chakra.Tests
                 var tester = new DelegateRefTester();
                 context.SetValue("tester", tester);
 
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     function doStuff(i, s) {
                         console.log('i: ' + i  + ', s: ' + s);
                     }
@@ -532,7 +532,7 @@ namespace Enklu.Orchid.Chakra.Tests
                 };
                 context.SetValue("callback", callback);
 
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     callback();
                 ");
 
@@ -553,7 +553,7 @@ namespace Enklu.Orchid.Chakra.Tests
 
                 context.SetValue("DoSomething", DoSomething);
 
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     function onDoSomething(a, b, c) {
                         console.log('a: ' + a + ', b: ' + b + ', c: ' + c);
                         return [ 'a', 'b', 'c' ];
@@ -569,7 +569,7 @@ namespace Enklu.Orchid.Chakra.Tests
         {
             RunTest(context =>
             {
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     function foo(a, b, c) {
                         console.log('a: ' + a + ', b: ' + b + ', c: ' + c);
                     }");
@@ -628,7 +628,7 @@ namespace Enklu.Orchid.Chakra.Tests
 
                 context.SetValue("require", new Func<string, object>(value => Resolve(value)));
 
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     var drawing = require('drawing') || { register: function() {} };
 
                     drawing.register('test', draw);
@@ -654,7 +654,7 @@ namespace Enklu.Orchid.Chakra.Tests
         {
             RunTest(context =>
             {
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     class Shape {
                         constructor (id, x, y) {
                             this.id = id
@@ -695,7 +695,7 @@ namespace Enklu.Orchid.Chakra.Tests
             {
                 var a = new SubClass();
 
-                context.RunScript(a, @"
+                context.RunScript(string.Empty, a, @"
                     this.DoAThing(5);
                     this.DoSomething(10);
                 ");
@@ -747,7 +747,7 @@ namespace Enklu.Orchid.Chakra.Tests
             {
                 var outer = new Outer();
                 //context.SetValue("outer", outer);
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     function acceptOuter(o) {
                         o.Dive(function(inner) {
                             var innerInner = inner.Dive();
@@ -767,7 +767,7 @@ namespace Enklu.Orchid.Chakra.Tests
                 Exception e = null;
                 try
                 {
-                    context.RunScript("execute();");
+                    context.RunScript(string.Empty, "execute();");
                 }
                 catch (Exception ee)
                 {
@@ -829,7 +829,7 @@ namespace Enklu.Orchid.Chakra.Tests
                 var cc = new CallCount();
                 var module = context.NewModule("module_1234");
 
-                context.RunScript(cc, script, module);
+                context.RunScript(string.Empty, cc, script, module);
 
                 var fn = module.GetExportedValue<IJsCallback>("enter");
                 fn.Invoke();
@@ -912,7 +912,7 @@ namespace Enklu.Orchid.Chakra.Tests
             RunTest(context =>
             {
                 context.SetValue("ele", new ArrayContainer());
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     var elements = ele.Elements;
 
                     for (var i in elements) {
@@ -936,7 +936,7 @@ namespace Enklu.Orchid.Chakra.Tests
 
                 context.SetValue("makeCallback", receiveCallback);
                 context.SetValue("ele", new ArrayContainer());
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     var elements = ele.Elements;
 
                     for (var i in elements) {
@@ -1016,27 +1016,27 @@ namespace Enklu.Orchid.Chakra.Tests
                 var vaTest = new VarArgTest(onCall);
                 context.SetValue("vaTest", vaTest);
                 context.SetValue("t", new CallCount());
-                context.RunScript("vaTest.Accept('hello', 13);");
-                context.RunScript("vaTest.Accept('test', 13, 'a', 'b', 'c', 'd', 'e', 'f', 32.5, t);");
-                context.RunScript("vaTest.Accept('test', 'me again');");
+                context.RunScript(string.Empty, "vaTest.Accept('hello', 13);");
+                context.RunScript(string.Empty, "vaTest.Accept('test', 13, 'a', 'b', 'c', 'd', 'e', 'f', 32.5, t);");
+                context.RunScript(string.Empty, "vaTest.Accept('test', 'me again');");
                 context.SetValue("foo", new FooObj {Name = "Bill"});
-                context.RunScript("vaTest.Accept(foo, 1, 2, 3);");
-                context.RunScript("vaTest.Accept();");
+                context.RunScript(string.Empty, "vaTest.Accept(foo, 1, 2, 3);");
+                context.RunScript(string.Empty, "vaTest.Accept();");
                 Assert.Throws<Exception>(() =>
                 {
-                    context.RunScript("vaTest.Accept('test', 'me', 1, 2, 3);");
+                    context.RunScript(string.Empty, "vaTest.Accept('test', 'me', 1, 2, 3);");
                 });
                 context.SetValue("foo", new FooObj {Name = "Bill"});
-                context.RunScript("vaTest.Accept(foo, 1, 2, 3);");
+                context.RunScript(string.Empty, "vaTest.Accept(foo, 1, 2, 3);");
 
-                context.RunScript("vaTest.Accept(55, 'hi');");
-                context.RunScript("vaTest.Accept(true, 'hiyo', 15, 'what', 'up', 'brother?');");
-                context.RunScript("vaTest.Accept(23, 'hiyo', 15, 'what', 'up', 'brother?', foo);");
+                context.RunScript(string.Empty, "vaTest.Accept(55, 'hi');");
+                context.RunScript(string.Empty, "vaTest.Accept(true, 'hiyo', 15, 'what', 'up', 'brother?');");
+                context.RunScript(string.Empty, "vaTest.Accept(23, 'hiyo', 15, 'what', 'up', 'brother?', foo);");
                 Assert.Throws<Exception>(() =>
                 {
-                    context.RunScript("vaTest.Accept(false, 'hiyo', 15, 'what', 'up', 'brother?', foo);");
+                    context.RunScript(string.Empty, "vaTest.Accept(false, 'hiyo', 15, 'what', 'up', 'brother?', foo);");
                 });
-                context.RunScript("vaTest.Accept(5, [ 1, 2, 3, 4, 5 ], 'whee', 'whee', 'what');");
+                context.RunScript(string.Empty, "vaTest.Accept(5, [ 1, 2, 3, 4, 5 ], 'whee', 'whee', 'what');");
             });
 
             Asserter.AreEqual(callArray, new int[] {1, 2, 2, 3, 1, 1});
@@ -1056,7 +1056,7 @@ namespace Enklu.Orchid.Chakra.Tests
             RunTest(context =>
             {
                 context.SetValue("d", new OptParam());
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     d.dispatch('my-evt');
                 ");
             });
@@ -1084,7 +1084,7 @@ namespace Enklu.Orchid.Chakra.Tests
             RunTest(context =>
             {
                 context.SetValue("thing", new NullReturner());
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     var aThing = thing.GetProperty('foo');
                     assert(!aThing);
                 ");
@@ -1097,7 +1097,7 @@ namespace Enklu.Orchid.Chakra.Tests
             RunTest(context =>
             {
                 context.SetValue("foo", new FooObj {Name="TestFoo"});
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     function output(someObj) {
                         for (var k in someObj) {
                             console.log('key: ' + k + ' = ' + someObj[k]);
@@ -1119,7 +1119,7 @@ namespace Enklu.Orchid.Chakra.Tests
                     callback.Invoke(o);
                 }));
 
-                context.RunScript(@"
+                context.RunScript(string.Empty, @"
                     receiver({
                         prop1: 'test 1 2 3',
                         prop2: 24,
@@ -1187,9 +1187,9 @@ namespace Enklu.Orchid.Chakra.Tests
                 var b = new InvokeCacheObj();
                 var c = new InvokeCacheObj();
 
-                context.RunScript(a, script, modA);
-                context.RunScript(b, script, modB);
-                context.RunScript(c, script, modC);
+                context.RunScript(string.Empty, a, script, modA);
+                context.RunScript(string.Empty, b, script, modB);
+                context.RunScript(string.Empty, c, script, modC);
 
                 var callA = modA.GetExportedValue<IJsCallback>("callAll");
                 var callB = modB.GetExportedValue<IJsCallback>("callAll");
@@ -1227,7 +1227,7 @@ namespace Enklu.Orchid.Chakra.Tests
                 {
                     jsCallback.Apply(this);
                 });
-            context.RunScript(@"
+            context.RunScript(string.Empty, @"
 'use strict';
 
 class JsElementApi {
@@ -1265,7 +1265,7 @@ var another = new AnotherContext();
 var thisBinding = new JsElementApi();
 var module_1234 = { };
 
-// RunScript(Program)
+// RunScript(string.Empty, Program)
 (function(module) {
     const self = this;
 

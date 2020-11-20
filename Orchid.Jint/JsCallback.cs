@@ -29,9 +29,6 @@ namespace Enklu.Orchid.Jint
 
         /// <inheritDoc />
         public IJsExecutionContext ExecutionContext => _context;
-        
-        /// <inheritDoc />
-        public IJsModule ExecutionModule { get; set; }
 
         /// <inheritDoc />
         public Exception ExecutionError { get; private set; }
@@ -67,12 +64,12 @@ namespace Enklu.Orchid.Jint
             }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", "[{0}:{1}] {2}", ExecutionModule?.Name, jsError.LineNumber, jsError.Message);
+                Log.Warning("Scripting", "[{0}:{1}] {2}", jsError.Location.Source, jsError.LineNumber, jsError.Message);
                 ExecutionError = jsError;
             }
             catch (Exception exception)
             {
-                Log.Warning("Scripting", "[{0}] An unknown error has occured: {1}", ExecutionModule?.Name, exception);
+                Log.Warning("Scripting", "An unknown error has occured: {1}", exception);
                 ExecutionError = exception;
             }
             return null;
@@ -98,12 +95,12 @@ namespace Enklu.Orchid.Jint
             }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", "[{0}:{1}] {2}", ExecutionModule?.Name, jsError.LineNumber, jsError.Message);
+                Log.Warning("Scripting", "[{0}:{1}] {2}", jsError.Location.Source, jsError.LineNumber, jsError.Message);
                 ExecutionError = jsError;
             }
             catch (Exception exception)
             {
-                Log.Warning("Scripting", "[{0}] An unknown error has occured: {1}", ExecutionModule?.Name, exception);
+                Log.Warning("Scripting", "An unknown error has occured: {1}", exception);
                 ExecutionError = exception;
             }
             return null;
