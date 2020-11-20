@@ -733,7 +733,7 @@ namespace Enklu.Orchid.Jint.Tests
                 var moduleName = "TestModule";
                 var module = context.NewModule("module_1234", moduleName);
 
-                context.RunScript("Test", cc, script, module);
+                context.RunScript(moduleName, cc, script, module);
 
                 var fnEnter = module.GetExportedValue<IJsCallback>("enter");
                 
