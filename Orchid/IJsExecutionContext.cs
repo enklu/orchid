@@ -19,9 +19,8 @@ namespace Enklu.Orchid
         /// Creates a new <see cref="IJsModule"/> implementation which can be passed to <see cref="RunScript(string)"/>
         /// </summary>
         /// <param name="moduleId">The module's id</param>
-        /// <param name="name">The module's friendly name.</param>
         /// <returns></returns>
-        IJsModule NewModule(string moduleId, string name = null);
+        IJsModule NewModule(string moduleId);
 
         /// <summary>
         /// Gets a property from the global object/scope.

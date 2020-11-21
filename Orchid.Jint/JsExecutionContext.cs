@@ -37,9 +37,9 @@ namespace Enklu.Orchid.Jint
         }
 
         /// <inheritdoc />
-        public IJsModule NewModule(string moduleId, string name = null)
+        public IJsModule NewModule(string moduleId)
         {
-            return new JsModule(_engine, moduleId, name);
+            return new JsModule(_engine, moduleId);
         }
 
         /// <inheritdoc />

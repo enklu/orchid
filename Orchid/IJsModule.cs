@@ -9,11 +9,6 @@
         /// Unique module identifier to prevent overlap across a global namespace.
         /// </summary>
         string ModuleId { get; }
-        
-        /// <summary>
-        /// Non-unique name for the module. Commonly the script's name.
-        /// </summary>
-        string Name { get; }
 
         /// <summary>
         /// Gets an exported value from the module.

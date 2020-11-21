@@ -731,7 +731,7 @@ namespace Enklu.Orchid.Jint.Tests
 
                 var cc = new CallCount();
                 var moduleName = "TestModule";
-                var module = context.NewModule("module_1234", moduleName);
+                var module = context.NewModule("module_1234");
 
                 context.RunScript(moduleName, cc, script, module);
 

@@ -29,7 +29,6 @@
             _interop = interop;
 
             ModuleId = moduleId;
-            Name = moduleId;
 
             // Create JS Representation
             Module = _scope.Run(() =>

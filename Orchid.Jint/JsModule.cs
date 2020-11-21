@@ -17,11 +17,10 @@ namespace Enklu.Orchid.Jint
 
         public JsValue Module { get; }
 
-        public JsModule(Engine engine, string moduleId, string name = null)
+        public JsModule(Engine engine, string moduleId)
         {
             _engine = engine;
             ModuleId = moduleId;
-            Name = name ?? moduleId;
 
             Module = _engine.Object.Construct(Arguments.Empty);
         }

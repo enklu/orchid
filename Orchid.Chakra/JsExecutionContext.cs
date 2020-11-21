@@ -67,7 +67,7 @@ namespace Enklu.Orchid.Chakra
         /// </summary>
         /// <param name="moduleId"></param>
         /// <returns></returns>
-        public IJsModule NewModule(string moduleId, string name = null)
+        public IJsModule NewModule(string moduleId)
         {
             return new JsModule(_scope, _binder, _interop, moduleId);
         }
