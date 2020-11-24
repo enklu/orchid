@@ -69,7 +69,8 @@ namespace Enklu.Orchid.Jint
             }
             catch (Exception exception)
             {
-                Log.Warning("Scripting", "An unknown error has occured: {1}", exception);
+                // TODO: Most recent js stack trace?
+                Log.Warning("Scripting", "An unknown error has occured: {0}", exception);
                 ExecutionError = exception;
             }
             return null;
@@ -100,7 +101,8 @@ namespace Enklu.Orchid.Jint
             }
             catch (Exception exception)
             {
-                Log.Warning("Scripting", "An unknown error has occured: {1}", exception);
+                // TODO: Most recent js stack trace?
+                Log.Warning("Scripting", "An unknown error has occured: {0}", exception);
                 ExecutionError = exception;
             }
             return null;
