@@ -10,6 +10,9 @@
 
         /// <inheritdoc/>
         public string ModuleId { get; }
+        
+        /// <inheritdoc/>
+        public string Name { get; }
 
         /// <summary>
         /// The module binding specifically for the Chakra implementation.

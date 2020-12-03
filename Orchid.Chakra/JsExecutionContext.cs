@@ -99,7 +99,7 @@ namespace Enklu.Orchid.Chakra
         /// <summary>
         /// Executes JavaScript code in the context of the global object/scope.
         /// </summary>
-        public void RunScript(string script)
+        public void RunScript(string name, string script)
         {
             _scope.Run(() =>
             {
@@ -119,9 +119,11 @@ namespace Enklu.Orchid.Chakra
         /// <summary>
         /// Executes JavaScript in the context of the <c>@this</c> parameter.
         /// </summary>
-        /// <param name="@this">The context of execution.</param>
+        /// <param name="name"></param>
+        /// <param name="this"></param>
         /// <param name="script">The script to run</param>
-        public void RunScript(object @this, string script)
+        /// <param name="@this">The context of execution.</param>
+        public void RunScript(string name, object @this, string script)
         {
             _scope.Run(() =>
             {
@@ -145,10 +147,12 @@ namespace Enklu.Orchid.Chakra
         /// Executes JavaScript in the context of the <c>@this</c> parameter, and allow exporting
         /// to a specific <see cref="IJsModule"/>.
         /// </summary>
-        /// <param name="@this">The context of execution.</param>
+        /// <param name="name"></param>
+        /// <param name="this"></param>
         /// <param name="script">The script to run</param>
         /// <param name="module">The module to export any inner properties to.</param>
-        public void RunScript(object @this, string script, IJsModule module)
+        /// <param name="@this">The context of execution.</param>
+        public void RunScript(string name, object @this, string script, IJsModule module)
         {
             _scope.Run(() =>
             {

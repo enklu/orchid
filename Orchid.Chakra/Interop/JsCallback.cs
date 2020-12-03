@@ -16,6 +16,9 @@ namespace Enklu.Orchid.Chakra.Interop
         /// <inheritDoc />
         public IJsExecutionContext ExecutionContext => _context;
 
+        /// <inheritDoc />
+        public Exception ExecutionError { get; }
+
         /// <summary>
         /// Creates a new <see cref="JsCallback"/> instance.
         /// </summary>

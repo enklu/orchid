@@ -1,4 +1,6 @@
-﻿namespace Enklu.Orchid
+﻿using System;
+
+namespace Enklu.Orchid
 {
     /// <summary>
     /// This interface defines an implementation prototype for a callback function inside of the javascript
@@ -10,6 +12,11 @@
         /// This property contains the <see cref="IJsExecutionContext"/> the callback was created in.
         /// </summary>
         IJsExecutionContext ExecutionContext { get; }
+        
+        /// <summary>
+        /// The most recent error, if any, from calling Apply or Invoke.
+        /// </summary>
+        Exception ExecutionError { get; }
 
         /// <summary>
         /// This method invokes the javascript callback with the provided arguments. Invocation works identically

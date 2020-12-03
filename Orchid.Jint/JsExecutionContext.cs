@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Reflection;
+using Enklu.Orchid.Logging;
 using Jint;
 using Jint.Native;
+using Jint.Parser;
+using Jint.Runtime;
 
 namespace Enklu.Orchid.Jint
 {
@@ -85,29 +88,53 @@ namespace Enklu.Orchid.Jint
         }
 
         /// <inheritdoc />
-        public void RunScript(string script)
+        public void RunScript(string name, string script)
         {
-            _engine.Execute(script);
+            try
+            {
+                _engine.Execute(script, new ParserOptions
+                {
+                    Source = name
+                });
+            }
+            catch (JavaScriptException jsError)
+            {
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+            }
         }
 
         /// <inheritdoc />
-        public void RunScript(object @this, string script)
+        public void RunScript(string name, object @this, string script)
         {
             var jsThis = JsValue.FromObject(_engine, @this);
-            var jsScript = string.Format("(function() {{ {0} }})", script);
+            var jsScript = $"(function() {{ {script} }})";
 
-            var fn = _engine.Execute(jsScript).GetCompletionValue();
-            _engine.Invoke(fn, jsThis, new object[] { });
+            var fn = _engine.Execute(jsScript, new ParserOptions { Source = name }).GetCompletionValue();
+            try
+            {
+                _engine.Invoke(fn, jsThis, new object[] { });
+            }
+            catch (JavaScriptException jsError)
+            {
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+            }
         }
 
         /// <inheritdoc />
-        public void RunScript(object @this, string script, IJsModule module)
+        public void RunScript(string name, object @this, string script, IJsModule module)
         {
             var jsThis = JsValue.FromObject(_engine, @this);
-            var jsScript = string.Format("(function(module) {{ {0} }})", script);
+            var jsScript = $"(function(module) {{ {script} }})";
 
-            var fn = _engine.Execute(jsScript).GetCompletionValue();
-            _engine.Invoke(fn, jsThis, new object[] { ((JsModule) module).Module });
+            var fn = _engine.Execute(jsScript, new ParserOptions { Source = name }).GetCompletionValue();
+            try
+            {
+                _engine.Invoke(fn, jsThis, new object[] { ((JsModule) module).Module });
+            }
+            catch (JavaScriptException jsError)
+            {
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+            }
         }
 
         /// <inheritdoc />
