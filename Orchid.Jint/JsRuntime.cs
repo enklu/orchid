@@ -1,5 +1,6 @@
 ﻿using System;
 using Jint;
+using Jint.Runtime.Debugger;
 
 namespace Enklu.Orchid.Jint
 {
@@ -27,7 +28,7 @@ namespace Enklu.Orchid.Jint
 
                 // Debugging Configuration
                 options.DebugMode(false);
-                options.AllowDebuggerStatement(false);
+                options.DebuggerStatementHandling(DebuggerStatementHandling.Ignore);
             }) { }
 
         /// <summary>
@@ -40,7 +41,7 @@ namespace Enklu.Orchid.Jint
                 configure(options);
 
                 // Enhance existing option setting with Deny Attribute
-                options.DenyInteropAccessWith(typeof(DenyJsAccess));
+                // options.DenyInteropAccessWith(typeof(DenyJsAccess)); TODO: Create a new options type
             };
         }
 
@@ -50,7 +51,7 @@ namespace Enklu.Orchid.Jint
             var engine = new Engine(_configure);
             var executionContext = new JsExecutionContext(engine);
 
-            engine.ClrTypeConverter.RegisterDelegateConversion(
+            engine.TypeConverter.RegisterDelegateConversion(
                 typeof(IJsCallback),
                 new JsCallbackConversion(executionContext));
 

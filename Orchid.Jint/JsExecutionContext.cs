@@ -91,14 +91,11 @@ namespace Enklu.Orchid.Jint
         {
             try
             {
-                _engine.Execute(script, new ScriptParsingOptions  
-                {
-                    Source = name
-                });
+                _engine.Execute(script, name);
             }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.Location.Start.Line, jsError.Message);
             }
         }
 
@@ -108,14 +105,14 @@ namespace Enklu.Orchid.Jint
             var jsThis = JsValue.FromObject(_engine, @this);
             var jsScript = $"(function() {{ {script} }})";
 
-            var fn = _engine.Execute(jsScript, new ParserOptions { Source = name }).GetCompletionValue();
+            var fn = _engine.Evaluate(jsScript, name);
             try
             {
                 _engine.Invoke(fn, jsThis, new object[] { });
             }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.Location.Start.Line, jsError.Message);
             }
         }
 
@@ -125,14 +122,14 @@ namespace Enklu.Orchid.Jint
             var jsThis = JsValue.FromObject(_engine, @this);
             var jsScript = $"(function(module) {{ {script} }})";
 
-            var fn = _engine.Execute(jsScript, new ParserOptions { Source = name }).GetCompletionValue();
+            var fn = _engine.Evaluate(jsScript, name);
             try
             {
                 _engine.Invoke(fn, jsThis, new object[] { ((JsModule) module).Module });
             }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.Location.Start.Line, jsError.Message);
             }
         }
 
@@ -146,7 +143,7 @@ namespace Enklu.Orchid.Jint
 
             if (null != _engine)
             {
-                _engine.Destroy();
+                _engine.Dispose();
             }
 
             _engine = null;

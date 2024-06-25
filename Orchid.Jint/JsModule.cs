@@ -22,7 +22,7 @@ namespace Enklu.Orchid.Jint
             _engine = engine;
             ModuleId = moduleId;
 
-            Module = _engine.Object.Construct(Arguments.Empty);
+            Module = _engine.Intrinsics.Object.Construct(Arguments.Empty);
         }
 
         public T GetExportedValue<T>(string name)
@@ -38,7 +38,7 @@ namespace Enklu.Orchid.Jint
                 _exports = moduleObj.Get("exports").AsObject();
             }
 
-            return _exports.Get(name).To<T>(_engine.ClrTypeConverter);
+            return _exports.Get(name).To<T>(_engine.TypeConverter);
         }
     }
 }
