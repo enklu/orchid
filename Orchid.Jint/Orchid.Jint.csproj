@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net451;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net462</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company>Enklu</Company>
     <Authors>Enklu</Authors>
@@ -11,19 +11,24 @@
       <!--<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies> -->
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- <PackageReference Include="Jint-Enklu" Version="2.9.1" />-->
-  </ItemGroup>
-
     <ItemGroup>
       <ProjectReference Include="../Orchid/Orchid.csproj" />
-      <ProjectReference Include="../../Jint/Jint/Jint-Enklu.csproj" />
+      <ProjectReference Include="..\..\..\jint\Jint\Jint.csproj" />
     </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
     <PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Acornima">
+      <HintPath>..\..\..\jint\artifacts\bin\Jint\release_net462\Acornima.dll</HintPath>
+    </Reference>
+    <Reference Include="Jint">
+      <HintPath>..\..\..\jint\artifacts\bin\Jint\release_net462\Jint.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

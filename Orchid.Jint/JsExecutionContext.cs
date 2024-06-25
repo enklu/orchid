@@ -3,7 +3,6 @@ using System.Reflection;
 using Enklu.Orchid.Logging;
 using Jint;
 using Jint.Native;
-using Jint.Parser;
 using Jint.Runtime;
 
 namespace Enklu.Orchid.Jint
@@ -46,7 +45,7 @@ namespace Enklu.Orchid.Jint
         public T GetValue<T>(string name)
         {
             var value = _engine.GetValue(name);
-            return value.To<T>(_engine.ClrTypeConverter);
+            return value.To<T>(_engine.TypeConverter);
         }
 
         /// <inheritdoc />
@@ -92,7 +91,7 @@ namespace Enklu.Orchid.Jint
         {
             try
             {
-                _engine.Execute(script, new ParserOptions
+                _engine.Execute(script, new ScriptParsingOptions  
                 {
                     Source = name
                 });
