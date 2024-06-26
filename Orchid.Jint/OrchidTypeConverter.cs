@@ -5,7 +5,7 @@ using Jint.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-
+using System.Dynamic;
 
 namespace Enklu.Orchid.Jint
 {
@@ -59,6 +59,12 @@ namespace Enklu.Orchid.Jint
             var converted = _delegateConversions[type].Convert(function);
             return Cache(function, converted);
           }
+        }
+        // Some of the clients expect an actual Dictionary<string, object> where
+        // parsing JSON gives us an ExpandoObject, which implements IDictionary<string, object>
+        if (valueType.Equals(typeof(ExpandoObject)))
+        {
+          value = new Dictionary<string, object>(value as IDictionary<string, object>);
         }
       }
       return base.Convert(value, type, formatProvider);
