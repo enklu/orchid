@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462</TargetFrameworks>
+    <TargetFrameworks>net451</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company>Enklu</Company>
     <Authors>Enklu</Authors>
@@ -20,15 +20,6 @@
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
     <PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.4.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Acornima">
-      <HintPath>..\..\..\jint\artifacts\bin\Jint\release_net462\Acornima.dll</HintPath>
-    </Reference>
-    <Reference Include="Jint">
-      <HintPath>..\..\..\jint\artifacts\bin\Jint\release_net462\Jint.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>

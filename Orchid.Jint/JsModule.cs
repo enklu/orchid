@@ -2,6 +2,7 @@
 using Jint.Native;
 using Jint.Native.Object;
 using Jint.Runtime;
+using System.Globalization;
 
 namespace Enklu.Orchid.Jint
 {
@@ -22,7 +23,7 @@ namespace Enklu.Orchid.Jint
             _engine = engine;
             ModuleId = moduleId;
 
-            Module = _engine.Intrinsics.Object.Construct(Arguments.Empty);
+            Module = _engine.Object.Construct(Arguments.Empty);
         }
 
         public T GetExportedValue<T>(string name)
@@ -38,7 +39,8 @@ namespace Enklu.Orchid.Jint
                 _exports = moduleObj.Get("exports").AsObject();
             }
 
-            return _exports.Get(name).To<T>(_engine.TypeConverter);
+            var obj = _exports.Get(name).ToObject();  // mps TODO: This was taken from To<>. Fix to follow DRY
+            return (T)_engine.ClrTypeConverter.Convert(obj, typeof(T), CultureInfo.InvariantCulture);
         }
     }
 }

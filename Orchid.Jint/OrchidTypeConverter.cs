@@ -7,11 +7,14 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 
 
-namespace Orchid.Jint
+namespace Enklu.Orchid.Jint
 {
   internal class OrchidTypeConverter: DefaultTypeConverter
   {
-    public OrchidTypeConverter(Engine engine) : base(engine) { }
+    public OrchidTypeConverter(Engine engine, JsExecutionContext executionContext) : base(engine)
+    {
+      RegisterDelegateConversion(typeof(IJsCallback), new JsCallbackConversion(executionContext));
+    }
 
     private readonly Dictionary<Delegate, object> _delegateCache = new Dictionary<Delegate, object>();
     private readonly Dictionary<Type, ICallableConversion> _delegateConversions = new Dictionary<Type, ICallableConversion>();
@@ -33,10 +36,41 @@ namespace Orchid.Jint
 
       _delegateConversions[targetType] = conversion;
     }
-    public override object? Convert(
-        object? value, Type type, IFormatProvider formatProvider)
+
+    public override object Convert(
+        object value, Type type, IFormatProvider formatProvider)
     {
-      return null;
+      if (value != null && !type.IsInstanceOfType(value) && !type.IsEnum)
+      {
+        var valueType = value.GetType();
+        if (valueType == typeof(Func<JsValue, JsValue[], JsValue>))
+        {
+          var function = (Func<JsValue, JsValue[], JsValue>)value;
+
+          // Check Cache for existing conversion
+          if (_delegateCache.ContainsKey(function))
+          {
+            return _delegateCache[function];
+          }
+
+          // Check for registered callable conversion
+          if (_delegateConversions.ContainsKey(type))
+          {
+            var converted = _delegateConversions[type].Convert(function);
+            return Cache(function, converted);
+          }
+        }
+      }
+      return base.Convert(value, type, formatProvider);
+    }
+
+    /// <summary>
+    /// Caches the wrapper for a specific callable.
+    /// </summary>
+    private object Cache(Func<JsValue, JsValue[], JsValue> callable, object target)
+    {
+      _delegateCache[callable] = target;
+      return target;
     }
   }
 

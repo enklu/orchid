@@ -28,7 +28,7 @@ namespace Enklu.Orchid.Jint
 
                 // Debugging Configuration
                 options.DebugMode(false);
-                options.DebuggerStatementHandling(DebuggerStatementHandling.Ignore);
+                options.AllowDebuggerStatement(false);
             }) { }
 
         /// <summary>
@@ -51,10 +51,7 @@ namespace Enklu.Orchid.Jint
             var engine = new Engine(_configure);
             var executionContext = new JsExecutionContext(engine);
 
-            engine.TypeConverter.RegisterDelegateConversion(
-                typeof(IJsCallback),
-                new JsCallbackConversion(executionContext));
-
+            engine.ClrTypeConverter = new OrchidTypeConverter(engine, executionContext);
             return executionContext;
         }
 

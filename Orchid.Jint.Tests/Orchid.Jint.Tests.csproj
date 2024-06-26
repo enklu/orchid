@@ -17,14 +17,4 @@
     <ProjectReference Include="../Orchid.Jint/Orchid.Jint.csproj" />
   </ItemGroup>
 
-
-  <ItemGroup>
-    <Reference Include="Acornima">
-      <HintPath>..\..\..\jint\artifacts\bin\Jint\release_net462\Acornima.dll</HintPath>
-    </Reference>
-    <Reference Include="Jint">
-      <HintPath>..\..\..\jint\artifacts\bin\Jint\release_net462\Jint.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>

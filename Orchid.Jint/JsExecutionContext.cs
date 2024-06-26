@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Globalization;
 using System.Reflection;
 using Enklu.Orchid.Logging;
 using Jint;
 using Jint.Native;
+using Jint.Parser;
 using Jint.Runtime;
 
 namespace Enklu.Orchid.Jint
@@ -45,7 +47,8 @@ namespace Enklu.Orchid.Jint
         public T GetValue<T>(string name)
         {
             var value = _engine.GetValue(name);
-            return value.To<T>(_engine.TypeConverter);
+            var obj = value.ToObject();  // mps TODO: This was taken from To<>. Fix to follow DRY
+            return (T)_engine.ClrTypeConverter.Convert(obj, typeof(T), CultureInfo.InvariantCulture);
         }
 
         /// <inheritdoc />
@@ -91,8 +94,11 @@ namespace Enklu.Orchid.Jint
         {
             try
             {
-                _engine.Execute(script, name);
-            }
+              _engine.Execute(script, new ParserOptions
+                {
+                  Source = name
+                });
+              }
             catch (JavaScriptException jsError)
             {
                 Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.Location.Start.Line, jsError.Message);
@@ -105,7 +111,7 @@ namespace Enklu.Orchid.Jint
             var jsThis = JsValue.FromObject(_engine, @this);
             var jsScript = $"(function() {{ {script} }})";
 
-            var fn = _engine.Evaluate(jsScript, name);
+            var fn = _engine.Execute(jsScript, new ParserOptions { Source = name }).GetCompletionValue();
             try
             {
                 _engine.Invoke(fn, jsThis, new object[] { });
@@ -122,7 +128,7 @@ namespace Enklu.Orchid.Jint
             var jsThis = JsValue.FromObject(_engine, @this);
             var jsScript = $"(function(module) {{ {script} }})";
 
-            var fn = _engine.Evaluate(jsScript, name);
+            var fn = _engine.Execute(jsScript, new ParserOptions { Source = name }).GetCompletionValue();
             try
             {
                 _engine.Invoke(fn, jsThis, new object[] { ((JsModule) module).Module });
@@ -143,7 +149,7 @@ namespace Enklu.Orchid.Jint
 
             if (null != _engine)
             {
-                _engine.Dispose();
+ //               _engine.Dispose();
             }
 
             _engine = null;
