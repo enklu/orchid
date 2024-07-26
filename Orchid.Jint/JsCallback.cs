@@ -34,6 +34,33 @@ namespace Enklu.Orchid.Jint
         public Exception ExecutionError { get; private set; }
 
         /// <summary>
+        /// Extra information to help identify the context when reporting on errors
+        /// </summary>
+        private string _errorContext
+        {
+            get
+            {
+                if (_context == null)
+                {
+                    return "execution context missing or destroyed:";
+                }
+                try 
+                {
+                    var savedErrorContext = _context.GetValue<string>("errorContext");
+                    if(savedErrorContext == null || savedErrorContext.Length == 0)
+                    {
+                        return "";
+                    }
+                    return savedErrorContext + ":";
+                }
+                catch(Exception)
+                {
+                    return ""; // No additional context provided
+                }
+            }
+        }
+
+        /// <summary>
         /// Creates a new <see cref="JsCallback"/> instance.
         /// </summary>
         public JsCallback(JsExecutionContext context, Func<JsValue, JsValue[], JsValue> callback)
@@ -64,13 +91,13 @@ namespace Enklu.Orchid.Jint
             }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", "[{0}:{1}] {2}", jsError.Location.Source, jsError.LineNumber, jsError.Message);
+                Log.Warning("Scripting", $"[{_errorContext}{jsError.Location.Source}:{jsError.LineNumber}] {jsError.Message}");
                 ExecutionError = jsError;
             }
             catch (Exception exception)
             {
                 // TODO: Most recent js stack trace?
-                Log.Warning("Scripting", "An unknown error has occured: {0}", exception);
+                Log.Warning("Scripting", $"An unknown error has occured: {_errorContext}{exception}");
                 ExecutionError = exception;
             }
             return null;
@@ -96,13 +123,13 @@ namespace Enklu.Orchid.Jint
             }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", "[{0}:{1}] {2}", jsError.Location.Source, jsError.LineNumber, jsError.Message);
+                Log.Warning("Scripting", $"[{_errorContext}{jsError.Location.Source}:{jsError.LineNumber}] {jsError.Message}");
                 ExecutionError = jsError;
             }
             catch (Exception exception)
             {
                 // TODO: Most recent js stack trace?
-                Log.Warning("Scripting", "An unknown error has occured: {0}", exception);
+                Log.Warning("Scripting", $"An unknown error has occured: {_errorContext}{exception}");
                 ExecutionError = exception;
             }
             return null;
