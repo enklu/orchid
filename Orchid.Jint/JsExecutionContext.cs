@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Reflection;
 using Enklu.Orchid.Logging;
 using Jint;
@@ -46,7 +47,8 @@ namespace Enklu.Orchid.Jint
         public T GetValue<T>(string name)
         {
             var value = _engine.GetValue(name);
-            return value.To<T>(_engine.ClrTypeConverter);
+            var obj = value.ToObject();
+            return (T)_engine.ClrTypeConverter.Convert(obj, typeof(T), CultureInfo.InvariantCulture);
         }
 
         /// <inheritdoc />
@@ -92,14 +94,14 @@ namespace Enklu.Orchid.Jint
         {
             try
             {
-                _engine.Execute(script, new ParserOptions
+              _engine.Execute(script, new ParserOptions
                 {
-                    Source = name
+                  Source = name
                 });
-            }
+              }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.Location.Start.Line, jsError.Message);
             }
         }
 
@@ -116,7 +118,7 @@ namespace Enklu.Orchid.Jint
             }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.Location.Start.Line, jsError.Message);
             }
         }
 
@@ -133,7 +135,7 @@ namespace Enklu.Orchid.Jint
             }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.LineNumber, jsError.Message);
+                Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.Location.Start.Line, jsError.Message);
             }
         }
 
@@ -145,9 +147,9 @@ namespace Enklu.Orchid.Jint
                 OnExecutionContextDisposing.Invoke(this);
             }
 
-            if (null != _engine)
+            if (null != _engine && _engine is IDisposable disposableEngine)
             {
-                _engine.Destroy();
+                disposableEngine.Dispose();
             }
 
             _engine = null;

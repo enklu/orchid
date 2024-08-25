@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net451;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net451</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company>Enklu</Company>
     <Authors>Enklu</Authors>
@@ -11,13 +11,9 @@
       <!--<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies> -->
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- <PackageReference Include="Jint-Enklu" Version="2.9.1" />-->
-  </ItemGroup>
-
     <ItemGroup>
       <ProjectReference Include="../Orchid/Orchid.csproj" />
-      <ProjectReference Include="../../Jint/Jint/Jint-Enklu.csproj" />
+      <ProjectReference Include="..\..\..\jint\Jint\Jint.csproj" />
     </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">

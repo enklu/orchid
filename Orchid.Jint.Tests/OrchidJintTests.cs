@@ -940,7 +940,7 @@ namespace Enklu.Orchid.Jint.Tests
                 {
                     Console.WriteLine("Receiver");
 
-                    var d = (Dictionary<string, object>)o;
+                    var d = (IDictionary<string, object>)o;
                     foreach (var key in d.Keys)
                     {
                         Console.WriteLine($"Key: {key}, Value: {d[key]}");
