@@ -47,7 +47,7 @@ namespace Enklu.Orchid.Jint
         public T GetValue<T>(string name)
         {
             var value = _engine.GetValue(name);
-            var obj = value.ToObject();  // mps TODO: This was taken from To<>. Fix to follow DRY
+            var obj = value.ToObject();
             return (T)_engine.ClrTypeConverter.Convert(obj, typeof(T), CultureInfo.InvariantCulture);
         }
 
@@ -147,9 +147,9 @@ namespace Enklu.Orchid.Jint
                 OnExecutionContextDisposing.Invoke(this);
             }
 
-            if (null != _engine)
+            if (null != _engine && _engine is IDisposable disposableEngine)
             {
- //               _engine.Dispose();
+                disposableEngine.Dispose();
             }
 
             _engine = null;

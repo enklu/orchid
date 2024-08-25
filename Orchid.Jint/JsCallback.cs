@@ -47,13 +47,13 @@ namespace Enklu.Orchid.Jint
                 try 
                 {
                     var savedErrorContext = _context.GetValue<string>("errorContext");
-                    if(savedErrorContext == null || savedErrorContext.Length == 0)
+                    if (savedErrorContext == null || savedErrorContext.Length == 0)
                     {
                         return "";
                     }
                     return savedErrorContext + ":";
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     return ""; // No additional context provided
                 }
