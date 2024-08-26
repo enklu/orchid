@@ -40,40 +40,52 @@ namespace Enklu.Orchid.Jint
     public override object Convert(
         object value, Type type, IFormatProvider formatProvider)
     {
-      if (value != null && !type.IsInstanceOfType(value) && !type.IsEnum)
-      {
-        var valueType = value.GetType();
-        if (valueType == typeof(Func<JsValue, JsValue[], JsValue>))
+        if (!TryConvert(value, type, formatProvider, out var converted))
         {
-          var function = (Func<JsValue, JsValue[], JsValue>)value;
-
-          // Check Cache for existing conversion
-          if (_delegateCache.ContainsKey(function))
-          {
-            return _delegateCache[function];
-          }
-
-          // Check for registered callable conversion
-          if (_delegateConversions.ContainsKey(type))
-          {
-            var converted = _delegateConversions[type].Convert(function);
-            return Cache(function, converted);
-          }
+            throw new Exception($"Unable to convert {value} to type {type}");
         }
-        // Some of the clients expect an actual Dictionary<string, object> where
-        // parsing JSON gives us an ExpandoObject, which implements IDictionary<string, object>
-        if (valueType.Equals(typeof(ExpandoObject)))
-        {
-          value = new Dictionary<string, object>(value as IDictionary<string, object>);
-        }
-      }
-      return base.Convert(value, type, formatProvider);
+        return converted;
     }
 
-    /// <summary>
-    /// Caches the wrapper for a specific callable.
-    /// </summary>
-    private object Cache(Func<JsValue, JsValue[], JsValue> callable, object target)
+    public override bool TryConvert(
+        object value, Type type, IFormatProvider formatProvider, out object converted)
+    {
+        if (value != null && !type.IsInstanceOfType(value) && !type.IsEnum)
+        {
+            var valueType = value.GetType();
+            if (valueType == typeof(Func<JsValue, JsValue[], JsValue>))
+            {
+                var function = (Func<JsValue, JsValue[], JsValue>)value;
+
+                // Check Cache for existing conversion
+                if (_delegateCache.ContainsKey(function))
+                {
+                    converted = _delegateCache[function];
+                    return true;
+                }
+
+                // Check for registered callable conversion
+                if (_delegateConversions.ContainsKey(type))
+                {
+                    var uncached = _delegateConversions[type].Convert(function);
+                    converted = Cache(function, uncached);
+                    return true;
+                }
+            }
+            // Some of the clients expect an actual Dictionary<string, object> where
+            // parsing JSON gives us an ExpandoObject, which implements IDictionary<string, object>
+            if (valueType.Equals(typeof(ExpandoObject)))
+            {
+                value = new Dictionary<string, object>(value as IDictionary<string, object>);
+            }
+        }
+        return base.TryConvert(value, type, formatProvider, out converted);
+    }
+
+        /// <summary>
+        /// Caches the wrapper for a specific callable.
+        /// </summary>
+        private object Cache(Func<JsValue, JsValue[], JsValue> callable, object target)
     {
       _delegateCache[callable] = target;
       return target;
