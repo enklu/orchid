@@ -23,7 +23,7 @@ namespace Enklu.Orchid.Jint
             _engine = engine;
             ModuleId = moduleId;
 
-            Module = _engine.Object.Construct(Arguments.Empty);
+            Module = _engine.Intrinsics.Object.Construct(Arguments.Empty);
         }
 
         public T GetExportedValue<T>(string name)
@@ -40,7 +40,7 @@ namespace Enklu.Orchid.Jint
             }
 
             var obj = _exports.Get(name).ToObject();  // mps TODO: This was taken from To<>. Fix to follow DRY
-            return (T)_engine.ClrTypeConverter.Convert(obj, typeof(T), CultureInfo.InvariantCulture);
+            return (T)_engine.TypeConverter.Convert(obj, typeof(T), CultureInfo.InvariantCulture);
         }
     }
 }

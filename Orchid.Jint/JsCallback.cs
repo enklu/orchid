@@ -91,7 +91,7 @@ namespace Enklu.Orchid.Jint
             }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", $"[{_errorContext}{jsError.Location.Source}:{jsError.LineNumber}] {jsError.Message}");
+                Log.Warning("Scripting", $"[{_errorContext}{jsError.Location.SourceFile}:{jsError.Location.Start.Line}] {jsError.Message}");
                 ExecutionError = jsError;
             }
             catch (Exception exception)
@@ -123,7 +123,7 @@ namespace Enklu.Orchid.Jint
             }
             catch (JavaScriptException jsError)
             {
-                Log.Warning("Scripting", $"[{_errorContext}{jsError.Location.Source}:{jsError.LineNumber}] {jsError.Message}");
+                Log.Warning("Scripting", $"[{_errorContext}{jsError.Location.SourceFile}:{jsError.Location.Start.Line}] {jsError.Message}");
                 ExecutionError = jsError;
             }
             catch (Exception exception)

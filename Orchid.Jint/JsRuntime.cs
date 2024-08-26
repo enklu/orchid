@@ -10,49 +10,37 @@ namespace Enklu.Orchid.Jint
     public class JsRuntime : IJsRuntime, IDisposable
     {
         /// <summary>
-        /// Configuration delegate to pass to each context.
-        /// </summary>
-        private readonly Action<Options> _configure;
-
-        /// <summary>
         /// Creates a new <see cref="JsRuntime"/> Jint implementation.
         /// </summary>
         public JsRuntime()
-            : this(options =>
-            {
-                options.AllowClr();
-                options.CatchClrExceptions(exception =>
-                {
-                    throw exception;
-                });
-
-                // Debugging Configuration
-                options.DebugMode(false);
-                options.AllowDebuggerStatement(false);
-            }) { }
-
-        /// <summary>
-        /// Creates a new <see cref="JsRuntime"/> instance.
-        /// </summary>
-        public JsRuntime(Action<Options> configure)
         {
-            _configure = options =>
-            {
-                configure(options);
 
-                // Enhance existing option setting with Deny Attribute
-                // options.DenyInteropAccessWith(typeof(DenyJsAccess)); TODO: Create a new options type
-            };
         }
 
         /// <inheritdoc />
         public IJsExecutionContext NewExecutionContext()
         {
-            var engine = new Engine(_configure);
-            var executionContext = new JsExecutionContext(engine);
+            JsExecutionContext jsExecutionContext = null;
+            Action<Options> configure = options =>
+                {
+                    options.AllowClr();
+                    options.CatchClrExceptions(exception =>
+                    {
+                        throw exception;
+                    });
 
-            engine.ClrTypeConverter = new OrchidTypeConverter(engine, executionContext);
-            return executionContext;
+                    // Debugging Configuration
+                    options.DebugMode(false);
+                    options.DebuggerStatementHandling(DebuggerStatementHandling.Ignore);
+                    options.SetTypeConverter(e =>
+                    {
+                        jsExecutionContext = new JsExecutionContext(e);
+                        return new OrchidTypeConverter(e, jsExecutionContext);
+                    });
+
+                };
+            var engine = new Engine(configure);
+            return jsExecutionContext;
         }
 
         /// <inheritdoc />

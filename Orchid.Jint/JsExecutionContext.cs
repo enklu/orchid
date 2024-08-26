@@ -4,7 +4,6 @@ using System.Reflection;
 using Enklu.Orchid.Logging;
 using Jint;
 using Jint.Native;
-using Jint.Parser;
 using Jint.Runtime;
 
 namespace Enklu.Orchid.Jint
@@ -48,7 +47,7 @@ namespace Enklu.Orchid.Jint
         {
             var value = _engine.GetValue(name);
             var obj = value.ToObject();
-            return (T)_engine.ClrTypeConverter.Convert(obj, typeof(T), CultureInfo.InvariantCulture);
+            return (T)_engine.TypeConverter.Convert(obj, typeof(T), CultureInfo.InvariantCulture);
         }
 
         /// <inheritdoc />
@@ -94,10 +93,7 @@ namespace Enklu.Orchid.Jint
         {
             try
             {
-              _engine.Execute(script, new ParserOptions
-                {
-                  Source = name
-                });
+              _engine.Execute(script, name);
               }
             catch (JavaScriptException jsError)
             {
@@ -111,7 +107,7 @@ namespace Enklu.Orchid.Jint
             var jsThis = JsValue.FromObject(_engine, @this);
             var jsScript = $"(function() {{ {script} }})";
 
-            var fn = _engine.Execute(jsScript, new ParserOptions { Source = name }).GetCompletionValue();
+            var fn = _engine.Evaluate(jsScript, name);
             try
             {
                 _engine.Invoke(fn, jsThis, new object[] { });
@@ -128,7 +124,7 @@ namespace Enklu.Orchid.Jint
             var jsThis = JsValue.FromObject(_engine, @this);
             var jsScript = $"(function(module) {{ {script} }})";
 
-            var fn = _engine.Execute(jsScript, new ParserOptions { Source = name }).GetCompletionValue();
+            var fn = _engine.Evaluate(jsScript, name);
             try
             {
                 _engine.Invoke(fn, jsThis, new object[] { ((JsModule) module).Module });

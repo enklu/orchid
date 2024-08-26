@@ -744,7 +744,7 @@ namespace Enklu.Orchid.Jint.Tests
                 
                 fnExit.Invoke();
                 Assert.NotNull(fnExit.ExecutionError);
-                Assert.AreEqual(moduleName, ((JavaScriptException) fnExit.ExecutionError).Location.Source);
+                Assert.AreEqual(moduleName, ((JavaScriptException) fnExit.ExecutionError).Location.SourceFile);
             });
         }
 
