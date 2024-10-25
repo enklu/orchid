@@ -1,12 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net451;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net462</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company>Enklu</Company>
     <Authors>Enklu</Authors>
     <AssemblyVersion>2020.11.0</AssemblyVersion>
     <FileVersion>2020.11.0</FileVersion>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\jint\Jint\Jint.csproj" />
+  </ItemGroup>
 
 </Project>

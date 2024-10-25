@@ -37,7 +37,7 @@ namespace Enklu.Orchid.Jint
                         jsExecutionContext = new JsExecutionContext(e);
                         return new OrchidTypeConverter(e, jsExecutionContext);
                     });
-
+                    options.ExperimentalFeatures = ExperimentalFeature.TaskInterop;
                 };
             var engine = new Engine(configure);
             return jsExecutionContext;

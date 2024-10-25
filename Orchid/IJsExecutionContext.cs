@@ -1,4 +1,6 @@
 ﻿using System;
+using Jint;
+using Acornima.Ast;
 
 namespace Enklu.Orchid
 {
@@ -54,5 +56,6 @@ namespace Enklu.Orchid
         /// <param name="script">The script to run</param>
         /// <param name="module">The module to export any inner properties to.</param>
         void RunScript(string name, object @this, string script, IJsModule module);
+        void RunScript(object @this, Prepared<Script> prepared, IJsModule module);
     }
 }

@@ -5,6 +5,7 @@ using Enklu.Orchid.Logging;
 using Jint;
 using Jint.Native;
 using Jint.Runtime;
+using Acornima.Ast;
 
 namespace Enklu.Orchid.Jint
 {
@@ -132,6 +133,23 @@ namespace Enklu.Orchid.Jint
             catch (JavaScriptException jsError)
             {
                 Log.Warning("Scripting", "[{0}:{1}] {2}", name, jsError.Location.Start.Line, jsError.Message);
+            }
+        }
+
+
+        /// <inheritdoc />
+        public void RunScript(object @this, Prepared<Script> script, IJsModule module)
+        {
+            var jsThis = JsValue.FromObject(_engine, @this);
+
+            var fn = _engine.Evaluate(script);
+            try
+            {
+                _engine.Invoke(fn, jsThis, new object[] { ((JsModule)module).Module });
+            }
+            catch (JavaScriptException jsError)
+            {
+                Log.Warning("Scripting", "[{0}:{1}] {2}", jsError.Location.SourceFile, jsError.Location.Start.Line, jsError.Message);
             }
         }
 
